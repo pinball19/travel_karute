@@ -11,9 +11,6 @@ const SpreadsheetManager = {
   initialize: function() {
     const container = document.getElementById('hot-container');
     
-    // デバッグ情報を追加
-    console.log('コンテナ要素:', container);
-    
     // コンテナが見つからない場合は初期化しない
     if (!container) {
       console.error('hot-containerが見つかりません');
@@ -32,37 +29,14 @@ const SpreadsheetManager = {
         data: UNIFIED_TEMPLATE,
         rowHeaders: true,
         colHeaders: true, // 列ヘッダー（A,B,C...）を表示
-        contextMenu: {
-          items: {
-            'row_above': { name: '上に行を挿入' },
-            'row_below': { name: '下に行を挿入' },
-            'remove_row': { name: '行を削除' },
-            'separator1': Handsontable.plugins.ContextMenu.SEPARATOR,
-            'copy': { name: 'コピー' },
-            'cut': { name: '切り取り' },
-            'separator2': Handsontable.plugins.ContextMenu.SEPARATOR,
-            'alignment': {
-              name: '配置',
-              submenu: {
-                items: [
-                  { key: 'alignment:left', name: '左揃え' },
-                  { key: 'alignment:center', name: '中央揃え' },
-                  { key: 'alignment:right', name: '右揃え' }
-                ]
-              }
-            }
-          }
-        },
+        contextMenu: true, // シンプルに true を指定
         manualColumnResize: true,
-        manualRowResize: false, // 行の高さを手動変更不可に設定
+        manualRowResize: true,
         licenseKey: 'non-commercial-and-evaluation',
         mergeCells: UNIFIED_MERGED_CELLS,
         
         // カラム幅を設定
         colWidths: COLUMN_WIDTHS,
-        
-        // 行の高さを固定
-        rowHeights: 25,
         
         // 表示設定 - スクロールバーを無効化
         width: '100%',
@@ -81,13 +55,7 @@ const SpreadsheetManager = {
         
         // モバイル対応設定
         outsideClickDeselects: false, // 外部クリックで選択解除しない
-        fragmentSelection: 'cell',    // モバイルでのセル選択を改善
-        
-        // 固定列数
-        fixedColumnsLeft: 0, // 左側の固定列を無効化
-        
-        // ヘッダー固定
-        fixedRowsTop: 0, // ヘッダー行を固定しない
+        fragmentSelection: false,     // モバイルでのセル選択を改善
         
         // 挿入・削除時のフック
         afterCreateRow: function(index, amount) {
@@ -99,17 +67,6 @@ const SpreadsheetManager = {
           console.log(`${amount}行が位置${index}から削除されました`);
           SpreadsheetManager.updateAfterRowOperation();
         },
-        
-        // 描画フック
-        afterRender: function() {
-          // レンダリング後に行の高さを調整
-          SpreadsheetManager.adjustRowHeights();
-          // スタイルを明示的に適用
-          SpreadsheetManager.applyCustomStyles();
-        },
-        
-        // 行の高さ自動調整を無効化
-        autoRowSize: false,
         
         // セルのカスタマイズ
         cells: function(row, col) {
@@ -139,6 +96,17 @@ const SpreadsheetManager = {
           }
           
           return cellProperties;
+        },
+        
+        // 全セルを選択させない
+        disableVisualSelection: false,
+        
+        // セルの編集可否を設定
+        readOnly: false,
+        
+        // 行の高さ自動調整
+        autoRowSize: {
+          syncLimit: 1000
         }
       };
       
@@ -153,15 +121,16 @@ const SpreadsheetManager = {
           console.log('Handsontableを再レンダリングします');
           this.hot.render();
           
-          // スタイルを明示的に適用
-          this.applyCustomStyles();
-          
-          // 列と行の位置を調整
-          this.fixRowAlignment();
+          // スクロールバーの設定を上書き
+          const wtHolders = document.querySelectorAll('.wtHolder');
+          wtHolders.forEach(holder => {
+            holder.style.overflowX = 'visible';
+            holder.style.overflowY = 'visible';
+          });
           
           container.scrollTop = 0;
         }
-      }, 500); // タイムアウトを延長
+      }, 200);
       
       // モバイルデバイスで操作しやすいように調整
       this.adjustForMobile();
@@ -180,110 +149,10 @@ const SpreadsheetManager = {
         });
         this.hot.render();
         
-        // 列と行の位置を調整
-        this.fixRowAlignment();
-        
-        // スタイルを明示的に適用
-        this.applyCustomStyles();
-        
         // モバイルデバイスの場合は追加の調整
         this.adjustForMobile();
       }
     });
-  },
-  
-  /**
-   * スタイルを明示的に適用する関数
-   */
-  applyCustomStyles: function() {
-    // テーブル要素を確認
-    const tableElements = document.querySelectorAll('.handsontable .htCore');
-    console.log('テーブル要素数:', tableElements.length);
-    
-    // 各要素にスタイルを適用
-    tableElements.forEach(table => {
-      table.style.borderCollapse = 'collapse';
-      table.style.width = '100%';
-    });
-    
-    // セルに明示的にスタイルを適用
-    const cells = document.querySelectorAll('.handsontable .htCore td');
-    cells.forEach(cell => {
-      cell.style.border = '1px solid #e0e0e0';
-      cell.style.padding = '4px';
-      cell.style.height = '25px';
-    });
-    
-    // ヘッダーセルにスタイルを適用
-    const headerCells = document.querySelectorAll('.handsontable .htCore th');
-    headerCells.forEach(th => {
-      th.style.border = '1px solid #ccc';
-      th.style.background = '#f3f2f1';
-    });
-    
-    // スクロールバー要素に明示的にスタイルを適用
-    const scrollbars = document.querySelectorAll('.handsontable .wtHolder');
-    scrollbars.forEach(holder => {
-      holder.style.overflow = 'auto';
-    });
-  },
-  
-  /**
-   * 行の高さを調整する
-   */
-  adjustRowHeights: function() {
-    if (!this.hot) return;
-    
-    // セクションヘッダーとその他の行で高さを分ける
-    const rowCount = this.hot.countRows();
-    const rowHeights = Array(rowCount).fill(25); // デフォルトは25px
-    
-    // セクションヘッダーの行は高さを大きく
-    SECTION_STYLES.sectionHeaders.forEach(rowIndex => {
-      if (rowIndex < rowCount) {
-        rowHeights[rowIndex] = 30;
-      }
-    });
-    
-    // 行の高さを設定
-    this.hot.updateSettings({
-      rowHeights: rowHeights
-    });
-    
-    // 明示的に行の高さをDOM要素に適用
-    setTimeout(() => {
-      const rows = document.querySelectorAll('.handsontable .htCore tr');
-      rows.forEach((row, index) => {
-        if (index < rowHeights.length) {
-          row.style.height = `${rowHeights[index]}px`;
-        }
-      });
-    }, 100);
-  },
-  
-  /**
-   * 列と行の位置ずれを修正する
-   */
-  fixRowAlignment: function() {
-    if (!this.hot) return;
-    
-    // すべての行の高さを同期
-    const rowCount = this.hot.countRows();
-    
-    // 左側固定列と本体の行の高さを同期
-    for (let i = 0; i < rowCount; i++) {
-      const mainRow = document.querySelector(`.ht_master .htCore tr:nth-child(${i + 1})`);
-      const leftRow = document.querySelector(`.ht_clone_left .htCore tr:nth-child(${i + 1})`);
-      
-      if (mainRow && leftRow) {
-        const height = `${mainRow.offsetHeight}px`;
-        mainRow.style.height = height;
-        leftRow.style.height = height;
-      }
-    }
-    
-    // テーブル全体を描画しなおす
-    this.hot.render();
   },
   
   /**
@@ -453,3 +322,205 @@ const SpreadsheetManager = {
           }
         }
       }
+      
+      // スタイル情報を更新
+      SECTION_STYLES.sectionHeaders = updatedSectionHeaders;
+      SECTION_STYLES.headerRows = updatedHeaderRows;
+      SECTION_STYLES.totalRows = updatedTotalRows;
+      SECTION_STYLES.spacerRows = updatedSpacerRows;
+      
+      // マージセルと設定を更新
+      this.hot.updateSettings({
+        mergeCells: updatedMerges
+      });
+      
+      // 再レンダリング
+      this.hot.render();
+    } catch (error) {
+      console.error('行操作後の更新中にエラーが発生しました:', error);
+    }
+  },
+  
+  /**
+   * カスタムセルレンダラー：セクション見出しセル
+   */
+  sectionHeaderRenderer: function(instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments);
+    td.style.backgroundColor = '#4472C4';
+    td.style.color = 'white';
+    td.style.fontWeight = 'bold';
+    td.style.fontSize = '14px';
+    td.style.padding = '6px';
+  },
+  
+  /**
+   * カスタムセルレンダラー：ヘッダーセル
+   */
+  headerRenderer: function(instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments);
+    td.style.backgroundColor = '#f3f2f1';
+    td.style.fontWeight = 'bold';
+    td.style.textAlign = col === 0 ? 'left' : 'center';
+  },
+  
+  /**
+   * カスタムセルレンダラー：合計セル
+   */
+  totalRenderer: function(instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments);
+    td.style.backgroundColor = '#e6f2ff';
+    td.style.fontWeight = 'bold';
+  },
+  
+  /**
+   * カスタムセルレンダラー：区切り行
+   */
+  spacerRenderer: function(instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments);
+    td.style.borderBottom = '1px solid #ccc';
+    td.style.height = '20px';
+  },
+  
+  /**
+   * データをスプレッドシートにロード
+   * @param {Array} data - ロードするデータ
+   */
+  loadData: function(data) {
+    if (!this.hot) {
+      console.warn('Handsontableインスタンスがないため、初期化します');
+      this.initialize();
+      if (!this.hot) {
+        console.error('Handsontableの初期化に失敗しました');
+        return;
+      }
+    }
+    
+    try {
+      // データが30行未満の場合、30行になるよう空行を追加
+      if (data.length < 30) {
+        const emptyRows = Array(30 - data.length).fill().map(() => Array(8).fill(''));
+        data = [...data, ...emptyRows];
+      }
+      
+      console.log('データをロードします');
+      this.hot.loadData(data);
+      
+      // データロード後、スクロールを一番上に戻す
+      setTimeout(() => {
+        const container = document.querySelector('.spreadsheet-container');
+        if (container) {
+          container.scrollTop = 0;
+        }
+        
+        // 再レンダリング
+        this.hot.render();
+        
+        // スクロールバーの設定を上書き
+        const wtHolders = document.querySelectorAll('.wtHolder');
+        wtHolders.forEach(holder => {
+          holder.style.overflowX = 'visible';
+          holder.style.overflowY = 'visible';
+        });
+      }, 100);
+    } catch (error) {
+      console.error('データロード中にエラーが発生しました:', error);
+    }
+  },
+  
+  /**
+   * 現在のスプレッドシートのデータを取得
+   * @return {Array} スプレッドシートのデータ
+   */
+  getData: function() {
+    if (!this.hot) {
+      console.warn('Handsontableインスタンスがありません');
+      return [];
+    }
+    return this.hot.getData();
+  },
+  
+  /**
+   * セルの値を設定
+   * @param {number} row - 行インデックス
+   * @param {number} col - 列インデックス
+   * @param {*} value - 設定する値
+   */
+  setDataAtCell: function(row, col, value) {
+    if (!this.hot) {
+      console.warn('Handsontableインスタンスがありません');
+      return;
+    }
+    this.hot.setDataAtCell(row, col, value);
+  },
+  
+  /**
+   * 統一テンプレートをロード
+   */
+  loadUnifiedTemplate: function() {
+    console.log('テンプレートをロードします');
+    this.loadData(UNIFIED_TEMPLATE);
+  },
+  
+  /**
+   * Excelファイルをインポート
+   * @param {File} file - インポートするExcelファイル
+   * @param {Function} callback - インポート完了時のコールバック
+   */
+  importFromExcel: function(file, callback) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        // 最初のシートのデータを取得
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        
+        // データをHandsontableに読み込む
+        this.loadData(jsonData);
+        
+        if (callback) callback(true);
+      } catch (error) {
+        console.error('Import error:', error);
+        if (callback) callback(false, error.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  },
+  
+  /**
+   * 現在のデータをExcelファイルとしてエクスポート
+   * @param {string} filename - 出力ファイル名
+   */
+  exportToExcel: function(filename) {
+    try {
+      // 現在のシートデータを取得
+      const data = this.getData();
+      
+      // ワークシートを作成
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      
+      // 列幅の設定
+      ws['!cols'] = COLUMN_WIDTHS.map(width => ({ width: width / 8 }));
+      
+      // セル結合の設定
+      const merges = this.hot.getSettings().mergeCells || [];
+      ws['!merges'] = merges.map(merge => ({ 
+        s: { r: merge.row, c: merge.col },
+        e: { r: merge.row + merge.rowspan - 1, c: merge.col + merge.colspan - 1 }
+      }));
+      
+      // 新しいワークブックを作成してシートを追加
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'カルテデータ');
+      
+      // Excelファイルとして出力
+      XLSX.writeFile(wb, filename);
+      return true;
+    } catch (error) {
+      console.error('Export error:', error);
+      return false;
+    }
+  }
+};
