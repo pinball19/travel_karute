@@ -11,82 +11,102 @@ const SpreadsheetManager = {
   initialize: function() {
     const container = document.getElementById('hot-container');
     
-    // 基本設定
-    const options = {
-      ...APP_CONFIG.HOT_OPTIONS,
-      data: UNIFIED_TEMPLATE,
-      mergeCells: UNIFIED_MERGED_CELLS,
-      
-      // カラム幅を設定
-      colWidths: COLUMN_WIDTHS,
-      
-      // 自動行高さ調整を有効化
-      autoRowSize: {
-        syncLimit: 1000
-      },
-      
-      // ワードラップを有効化（テキスト折り返し）
-      wordWrap: true,
-      
-      // 最小表示行数を設定（30行以上表示）
-      minRows: 30,
-      minSpareRows: 5, // 空の行を追加して下部に余白を確保
-      
-      // セルのカスタマイズ
-      cells: function(row, col) {
-        const cellProperties = {};
-        
-        // セクション見出し行のスタイル
-        if (SECTION_STYLES.sectionHeaders.includes(row)) {
-          cellProperties.renderer = SpreadsheetManager.sectionHeaderRenderer;
-        }
-        // ヘッダー行のスタイル
-        else if (SECTION_STYLES.headerRows.includes(row)) {
-          cellProperties.renderer = SpreadsheetManager.headerRenderer;
-        }
-        // 合計行のスタイル
-        else if (SECTION_STYLES.totalRows.includes(row)) {
-          cellProperties.renderer = SpreadsheetManager.totalRenderer;
-        }
-        // 空白の区切り行
-        else if (SECTION_STYLES.spacerRows.includes(row)) {
-          cellProperties.renderer = SpreadsheetManager.spacerRenderer;
-        }
-        
-        // 1列目（項目名列）の設定
-        if (col === 0) {
-          cellProperties.wordWrap = true; // テキスト折り返しを特に有効化
-        }
-        
-        return cellProperties;
-      },
-      
-      // 行ヘッダーを常に表示
-      fixedRowsTop: 0,
-      fixedColumnsLeft: 0,
-      
-      // スクロール設定
-      viewportRowRenderingOffset: 30, // より多くの行を事前にレンダリング
-    };
+    // コンテナが見つからない場合は初期化しない
+    if (!container) {
+      console.error('hot-containerが見つかりません');
+      return;
+    }
     
-    // Handsontableインスタンスを作成
-    this.hot = new Handsontable(container, options);
+    // 既存のインスタンスがあれば破棄
+    if (this.hot) {
+      this.hot.destroy();
+      this.hot = null;
+    }
+    
+    try {
+      // 基本設定
+      const options = {
+        data: UNIFIED_TEMPLATE,
+        rowHeaders: true,
+        colHeaders: false,
+        contextMenu: true,
+        manualColumnResize: true,
+        manualRowResize: true,
+        licenseKey: 'non-commercial-and-evaluation',
+        mergeCells: UNIFIED_MERGED_CELLS,
+        
+        // カラム幅を設定
+        colWidths: COLUMN_WIDTHS,
+        
+        // 表示設定
+        width: container.offsetWidth,
+        height: container.offsetHeight,
+        
+        // テキスト折り返し
+        wordWrap: true,
+        
+        // 最小表示行数
+        minRows: 30,
+        minSpareRows: 5,
+        
+        // セルのカスタマイズ
+        cells: function(row, col) {
+          const cellProperties = {};
+          
+          // セクション見出し行のスタイル
+          if (SECTION_STYLES.sectionHeaders.includes(row)) {
+            cellProperties.renderer = SpreadsheetManager.sectionHeaderRenderer;
+          }
+          // ヘッダー行のスタイル
+          else if (SECTION_STYLES.headerRows.includes(row)) {
+            cellProperties.renderer = SpreadsheetManager.headerRenderer;
+          }
+          // 合計行のスタイル
+          else if (SECTION_STYLES.totalRows.includes(row)) {
+            cellProperties.renderer = SpreadsheetManager.totalRenderer;
+          }
+          // 空白の区切り行
+          else if (SECTION_STYLES.spacerRows.includes(row)) {
+            cellProperties.renderer = SpreadsheetManager.spacerRenderer;
+          }
+          
+          // 1列目（項目名列）の設定
+          if (col === 0) {
+            cellProperties.wordWrap = true;
+          }
+          
+          return cellProperties;
+        }
+      };
+      
+      console.log('Handsontableを初期化します');
+      // Handsontableインスタンスを作成
+      this.hot = new Handsontable(container, options);
+      console.log('Handsontableの初期化完了');
+      
+      // レンダリングを確実に行う
+      setTimeout(() => {
+        if (this.hot) {
+          console.log('Handsontableを再レンダリングします');
+          this.hot.render();
+          container.scrollTop = 0;
+        }
+      }, 200);
+    } catch (error) {
+      console.error('Handsontableの初期化中にエラーが発生しました:', error);
+    }
     
     // ウィンドウのリサイズに合わせてHandsontableをリサイズ
     window.addEventListener('resize', () => {
-      this.hot.updateSettings({
-        width: container.offsetWidth,
-        height: container.offsetHeight
-      });
+      if (this.hot) {
+        console.log('リサイズによりHandsontableを更新します');
+        this.hot.updateSettings({
+          width: container.offsetWidth,
+          height: container.offsetHeight
+        });
+        this.hot.render();
+      }
     });
-    
-    // 初期化後、全体を表示するためにセルの再レンダリングを実行
-    setTimeout(() => {
-      this.hot.render();
-      
-      // スクロールを一番上に戻す
-      container.scrollTop = 0;
-    }, 100);
   },
   
   /**
@@ -134,20 +154,38 @@ const SpreadsheetManager = {
    * @param {Array} data - ロードするデータ
    */
   loadData: function(data) {
-    if (!this.hot) return;
-    
-    // データが30行未満の場合、30行になるよう空行を追加
-    if (data.length < 30) {
-      const emptyRows = Array(30 - data.length).fill().map(() => Array(8).fill(''));
-      data = [...data, ...emptyRows];
+    if (!this.hot) {
+      console.warn('Handsontableインスタンスがないため、初期化します');
+      this.initialize();
+      if (!this.hot) {
+        console.error('Handsontableの初期化に失敗しました');
+        return;
+      }
     }
     
-    this.hot.loadData(data);
-    
-    // データロード後、スクロールを一番上に戻す
-    setTimeout(() => {
-      document.querySelector('.spreadsheet-container').scrollTop = 0;
-    }, 100);
+    try {
+      // データが30行未満の場合、30行になるよう空行を追加
+      if (data.length < 30) {
+        const emptyRows = Array(30 - data.length).fill().map(() => Array(8).fill(''));
+        data = [...data, ...emptyRows];
+      }
+      
+      console.log('データをロードします');
+      this.hot.loadData(data);
+      
+      // データロード後、スクロールを一番上に戻す
+      setTimeout(() => {
+        const container = document.querySelector('.spreadsheet-container');
+        if (container) {
+          container.scrollTop = 0;
+        }
+        
+        // 再レンダリング
+        this.hot.render();
+      }, 100);
+    } catch (error) {
+      console.error('データロード中にエラーが発生しました:', error);
+    }
   },
   
   /**
@@ -155,7 +193,10 @@ const SpreadsheetManager = {
    * @return {Array} スプレッドシートのデータ
    */
   getData: function() {
-    if (!this.hot) return [];
+    if (!this.hot) {
+      console.warn('Handsontableインスタンスがありません');
+      return [];
+    }
     return this.hot.getData();
   },
   
@@ -166,7 +207,10 @@ const SpreadsheetManager = {
    * @param {*} value - 設定する値
    */
   setDataAtCell: function(row, col, value) {
-    if (!this.hot) return;
+    if (!this.hot) {
+      console.warn('Handsontableインスタンスがありません');
+      return;
+    }
     this.hot.setDataAtCell(row, col, value);
   },
   
@@ -174,6 +218,7 @@ const SpreadsheetManager = {
    * 統一テンプレートをロード
    */
   loadUnifiedTemplate: function() {
+    console.log('テンプレートをロードします');
     this.loadData(UNIFIED_TEMPLATE);
   },
   
