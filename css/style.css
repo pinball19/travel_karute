@@ -60,6 +60,85 @@
   overflow: auto !important;
 }
 
+/* モーダル関連のスタイル */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: 10% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  max-width: 900px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.modal-table-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-top: 15px;
+}
+
+.modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ddd;
+}
+
+.modal-table th, .modal-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.modal-table th {
+  background-color: #f3f2f1;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.close-modal {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: -10px;
+}
+
+.close-modal:hover {
+  color: #555;
+}
+
+.action-btn {
+  padding: 4px 8px;
+  margin: 0 2px;
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+}
+
+.edit-btn {
+  background-color: #4472C4;
+  color: white;
+}
+
+.delete-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
 /* スマホ対応のスタイル調整 */
 @media (max-width: 768px) {
   .excel-theme .handsontable .htCore td,
@@ -70,4 +149,108 @@
   .excel-theme .handsontable .htCore tr {
     height: 22px !important;
   }
+  
+  .modal-content {
+    width: 95%;
+    margin: 5% auto;
+    padding: 10px;
+  }
+  
+  .modal-table th, .modal-table td {
+    padding: 4px;
+    font-size: 12px;
+  }
+  
+  .action-btn {
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+}
+
+/* アプリケーション全体のレイアウト修正 */
+.excel-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.spreadsheet-container {
+  flex-grow: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.hot-container {
+  width: 100%;
+  height: 100%;
+}
+
+/* スクロールバーのスタイル改善 */
+.handsontable .wtHolder::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.handsontable .wtHolder::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.handsontable .wtHolder::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+/* Excel風ヘッダーとリボンのスタイル */
+.excel-header {
+  background-color: #217346;
+  color: white;
+  padding: 8px 15px;
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.excel-ribbon {
+  background-color: #f3f3f3;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 5px 10px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.ribbon-button {
+  background-color: transparent;
+  border: none;
+  padding: 5px 8px;
+  margin: 0 2px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+}
+
+.ribbon-button:hover {
+  background-color: #e6e6e6;
+}
+
+.ribbon-button i {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.ribbon-divider {
+  width: 1px;
+  background-color: #d0d0d0;
+  margin: 0 5px;
+}
+
+.status-bar {
+  background-color: #f3f3f3;
+  border-top: 1px solid #e0e0e0;
+  padding: 5px 10px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
 }
