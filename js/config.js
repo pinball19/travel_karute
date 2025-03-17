@@ -29,7 +29,7 @@ const APP_CONFIG = {
   // Handsontableの設定
   HOT_OPTIONS: {
     rowHeaders: true,
-    colHeaders: false, // 列ヘッダーは不要
+    colHeaders: true, // 列ヘッダー（A,B,C...）を表示するように変更
     contextMenu: true,
     manualColumnResize: true,
     manualRowResize: true,
