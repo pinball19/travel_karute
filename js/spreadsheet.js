@@ -14,19 +14,44 @@ const SpreadsheetManager = {
     // 基本設定
     const options = {
       ...APP_CONFIG.HOT_OPTIONS,
-      data: TEMPLATES[0],
-      mergeCells: BASIC_INFO_MERGED_CELLS,
+      data: UNIFIED_TEMPLATE,
+      mergeCells: UNIFIED_MERGED_CELLS,
+      
+      // カラム幅を設定
+      colWidths: COLUMN_WIDTHS,
+      
+      // 自動行高さ調整を有効化
+      autoRowSize: {
+        syncLimit: 1000
+      },
+      
+      // ワードラップを有効化（テキスト折り返し）
+      wordWrap: true,
+      
+      // セルのカスタマイズ
       cells: function(row, col) {
         const cellProperties = {};
         
+        // セクション見出し行のスタイル
+        if (SECTION_STYLES.sectionHeaders.includes(row)) {
+          cellProperties.renderer = SpreadsheetManager.sectionHeaderRenderer;
+        }
         // ヘッダー行のスタイル
-        if (row === 0 || row === 1 || row === 4 || row === 9 || row === 14) {
+        else if (SECTION_STYLES.headerRows.includes(row)) {
           cellProperties.renderer = SpreadsheetManager.headerRenderer;
         }
-        
         // 合計行のスタイル
-        if (row === 8 || row === 13) {
+        else if (SECTION_STYLES.totalRows.includes(row)) {
           cellProperties.renderer = SpreadsheetManager.totalRenderer;
+        }
+        // 空白の区切り行
+        else if (SECTION_STYLES.spacerRows.includes(row)) {
+          cellProperties.renderer = SpreadsheetManager.spacerRenderer;
+        }
+        
+        // 1列目（項目名列）の設定
+        if (col === 0) {
+          cellProperties.wordWrap = true; // テキスト折り返しを特に有効化
         }
         
         return cellProperties;
@@ -46,13 +71,25 @@ const SpreadsheetManager = {
   },
   
   /**
+   * カスタムセルレンダラー：セクション見出しセル
+   */
+  sectionHeaderRenderer: function(instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments);
+    td.style.backgroundColor = '#4472C4';
+    td.style.color = 'white';
+    td.style.fontWeight = 'bold';
+    td.style.fontSize = '14px';
+    td.style.padding = '6px';
+  },
+  
+  /**
    * カスタムセルレンダラー：ヘッダーセル
    */
   headerRenderer: function(instance, td, row, col, prop, value, cellProperties) {
     Handsontable.renderers.TextRenderer.apply(this, arguments);
     td.style.backgroundColor = '#f3f2f1';
     td.style.fontWeight = 'bold';
-    td.style.textAlign = 'center';
+    td.style.textAlign = col === 0 ? 'left' : 'center';
   },
   
   /**
@@ -62,6 +99,15 @@ const SpreadsheetManager = {
     Handsontable.renderers.TextRenderer.apply(this, arguments);
     td.style.backgroundColor = '#e6f2ff';
     td.style.fontWeight = 'bold';
+  },
+  
+  /**
+   * カスタムセルレンダラー：区切り行
+   */
+  spacerRenderer: function(instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments);
+    td.style.borderBottom = '1px solid #ccc';
+    td.style.height = '20px';
   },
   
   /**
@@ -94,11 +140,10 @@ const SpreadsheetManager = {
   },
   
   /**
-   * シートのタイプに応じたテンプレートをロード
-   * @param {number} sheetIndex - シートのインデックス
+   * 統一テンプレートをロード
    */
-  loadTemplateBySheetIndex: function(sheetIndex) {
-    this.loadData(TEMPLATES[sheetIndex]);
+  loadUnifiedTemplate: function() {
+    this.loadData(UNIFIED_TEMPLATE);
   },
   
   /**
@@ -140,6 +185,15 @@ const SpreadsheetManager = {
       
       // ワークシートを作成
       const ws = XLSX.utils.aoa_to_sheet(data);
+      
+      // 列幅の設定
+      ws['!cols'] = COLUMN_WIDTHS.map(width => ({ width: width / 8 }));
+      
+      // セル結合の設定
+      ws['!merges'] = UNIFIED_MERGED_CELLS.map(merge => ({ 
+        s: { r: merge.row, c: merge.col },
+        e: { r: merge.row + merge.rowspan - 1, c: merge.col + merge.colspan - 1 }
+      }));
       
       // 新しいワークブックを作成してシートを追加
       const wb = XLSX.utils.book_new();
