@@ -1,98 +1,176 @@
-/* 行の位置合わせのための追加スタイル */
-.excel-theme .handsontable .ht_clone_left .htCore td,
-.excel-theme .handsontable .ht_master .htCore td {
-  border-bottom: 1px solid #e0e0e0 !important; /* 全ての行に下線を強制 */
-  height: auto !important; /* 高さの自動調整を無効化 */
-  line-height: 21px !important; /* 固定の行の高さ */
+/* 基本スタイル */
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f5f5f5;
+  overflow: hidden; /* オーバーフローを隠す */
 }
 
-/* 列と行の高さを均一に */
-.excel-theme .handsontable .htCore td,
+.excel-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  width: 100%;
+}
+
+/* Excel風ヘッダー */
+.excel-header {
+  background-color: #217346; /* Excel緑 */
+  color: white;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Excel風リボン */
+.excel-ribbon {
+  background-color: #f3f2f1;
+  border-bottom: 1px solid #e1dfdd;
+  padding: 5px 10px;
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  overflow-x: auto; /* スマホでスクロール可能に */
+  white-space: nowrap; /* リボンアイテムの折り返しを防止 */
+}
+
+.ribbon-button {
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  min-width: 50px; /* スマホでタップしやすく */
+}
+
+.ribbon-button:hover {
+  border: 1px solid #c8c6c4;
+  background-color: #f9f8f7;
+}
+
+.ribbon-button i {
+  font-size: 16px;
+  margin-bottom: 3px;
+}
+
+.ribbon-divider {
+  width: 1px;
+  background-color: #e1dfdd;
+  margin: 0 5px;
+}
+
+/* スプレッドシートコンテナ */
+.spreadsheet-container {
+  flex-grow: 1;
+  position: relative;
+  overflow: auto; /* スクロールバーを1つだけに */
+  -webkit-overflow-scrolling: touch; /* モバイルデバイスでのスムーズなスクロール */
+}
+
+.hot-container {
+  width: 100%;
+  height: 100%;
+  overflow: visible; /* スクロールバーを表示しない */
+}
+
+/* ステータスバー */
+.status-bar {
+  background-color: #f3f2f1;
+  border-top: 1px solid #e1dfdd;
+  padding: 5px 10px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 100;
+  position: relative;
+}
+
+/* Handsontableをよりエクセルに近づけるためのスタイル */
+.excel-theme .handsontable {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 13px;
+}
+
+.excel-theme .handsontable .htCore td {
+  border-color: #e0e0e0;
+}
+
 .excel-theme .handsontable .htCore th {
-  box-sizing: border-box;
+  background-color: #f3f2f1;
+  color: #333;
+  font-weight: normal;
 }
 
-/* テーブルの各行の高さを一致させる */
-.excel-theme .handsontable .htCore tr {
-  height: auto !important;
+.excel-theme .handsontable .htCore tbody tr:first-child td {
+  border-top: 1px solid #e0e0e0;
 }
 
-/* 行の高さを手動で設定 */
-.excel-theme .handsontable .htCore tr {
-  height: 25px !important;
+.excel-theme .handsontable .htCore thead th:first-child {
+  border-left: 1px solid #e0e0e0;
 }
 
-/* セクションヘッダーの高さ調整 */
+/* テキスト折り返し用スタイル */
+.excel-theme .handsontable td {
+  white-space: pre-wrap;
+  vertical-align: top;
+  padding: 4px 6px;
+}
+
+/* セクションヘッダーのスタイル */
 .excel-theme .handsontable td.section-header {
-  height: 30px !important;
+  background-color: #4472C4;
+  color: white;
+  font-weight: bold;
+  padding: 6px;
+  font-size: 14px;
 }
 
-/* クローンと元のテーブルの整合性を保つ */
-.excel-theme .handsontable .ht_clone_left .htCore,
-.excel-theme .handsontable .ht_master .htCore {
-  border-collapse: collapse !important;
-}
-
-/* 行ヘッダーのスタイル調整 */
-.excel-theme .handsontable .ht_clone_left .htCore th {
-  border-bottom: 1px solid #e0e0e0 !important;
-  height: 25px !important;
-}
-
-/* セルのコンテンツが多い場合の高さ自動調整のための修正 */
-.excel-theme .handsontable td.htAutocomplete,
-.excel-theme .handsontable td.htDimmed {
-  height: auto !important;
-  overflow: hidden;
-}
-
-/* マスターテーブルとクローンテーブルの間の境界線調整 */
-.excel-theme .handsontable .ht_clone_left .htCore {
-  border-right: 2px solid #ccc !important;
-}
-
-/* スクロール時の位置調整 */
-.excel-theme .handsontable .wtHolder {
-  overflow: visible !important;
-}
-
-.excel-theme .handsontable .ht_master .wtHolder {
-  overflow: auto !important;
-}
-
-/* モーダル関連のスタイル */
+/* カルテ一覧モーダル */
 .modal {
   display: none;
   position: fixed;
-  z-index: 1000;
-  left: 0;
   top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  overflow-y: auto; /* モーダル内でスクロール可能に */
 }
 
 .modal-content {
-  background-color: #fefefe;
-  margin: 10% auto;
+  position: relative;
+  background-color: #fff;
+  margin: 50px auto;
   padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
+  width: 90%; /* スマホに合わせて幅を広く */
   max-width: 900px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.modal-table-container {
-  max-height: 60vh;
-  overflow-y: auto;
-  margin-top: 15px;
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .modal-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid #ddd;
+  margin-top: 15px;
 }
 
 .modal-table th, .modal-table td {
@@ -103,154 +181,119 @@
 
 .modal-table th {
   background-color: #f3f2f1;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
-.close-modal {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: -10px;
+.modal-table tr:nth-child(even) {
+  background-color: #f9f9f9;
 }
 
-.close-modal:hover {
-  color: #555;
+.modal-table tr:hover {
+  background-color: #f1f1f1;
 }
 
 .action-btn {
-  padding: 4px 8px;
+  padding: 3px 8px;
   margin: 0 2px;
   cursor: pointer;
   border: none;
   border-radius: 3px;
+  min-height: 30px; /* タップしやすいサイズ */
 }
 
 .edit-btn {
-  background-color: #4472C4;
+  background-color: #4CAF50;
   color: white;
 }
 
 .delete-btn {
-  background-color: #e74c3c;
+  background-color: #f44336;
   color: white;
 }
 
-/* スマホ対応のスタイル調整 */
+/* スマホ対応のスタイル */
 @media (max-width: 768px) {
-  .excel-theme .handsontable .htCore td,
-  .excel-theme .handsontable .htCore th {
-    line-height: 18px !important;
+  .excel-header {
+    padding: 8px 10px;
+    font-size: 14px;
   }
   
-  .excel-theme .handsontable .htCore tr {
-    height: 22px !important;
+  .ribbon-button {
+    padding: 4px 8px;
+    min-width: 60px; /* スマホでタップしやすいサイズ */
   }
   
+  .excel-theme .handsontable {
+    font-size: 12px; /* スマホでの文字サイズを小さく */
+  }
+  
+  .handsontable .htCore td {
+    padding: 6px 4px; /* セルのパディングを調整 */
+  }
+  
+  .status-bar {
+    font-size: 10px;
+  }
+  
+  /* モーダルの調整 */
   .modal-content {
+    margin: 20px auto;
+    padding: 15px;
     width: 95%;
-    margin: 5% auto;
-    padding: 10px;
   }
   
-  .modal-table th, .modal-table td {
-    padding: 4px;
-    font-size: 12px;
+  /* テーブルをスクロール可能に */
+  .modal-table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .action-btn {
-    padding: 2px 4px;
-    font-size: 11px;
+    padding: 6px 10px; /* スマホでタップしやすいサイズ */
+    margin: 3px;
+    display: block; /* ボタンを縦に並べる */
+    width: 90%;
   }
 }
 
-/* アプリケーション全体のレイアウト修正 */
-.excel-app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+/* スクロールバーを非表示にする */
+::-webkit-scrollbar {
+  width: 0px;  /* 縦スクロールバーを非表示 */
+  height: 0px; /* 横スクロールバーを非表示 */
 }
 
-.spreadsheet-container {
-  flex-grow: 1;
-  position: relative;
-  overflow: hidden;
-}
-
-.hot-container {
-  width: 100%;
-  height: 100%;
-}
-
-/* スクロールバーのスタイル改善 */
+/* Handsontableのスクロールバーを非表示 */
 .handsontable .wtHolder::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 0;
+  height: 0;
 }
 
-.handsontable .wtHolder::-webkit-scrollbar-track {
-  background: #f1f1f1;
+.handsontable .wtHolder {
+  overflow: auto !important;
 }
 
-.handsontable .wtHolder::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-/* Excel風ヘッダーとリボンのスタイル */
-.excel-header {
-  background-color: #217346;
-  color: white;
-  padding: 8px 15px;
-  font-size: 16px;
-  display: flex;
-  justify-content: space-between;
-}
-
-.excel-ribbon {
-  background-color: #f3f3f3;
-  border-bottom: 1px solid #e0e0e0;
-  padding: 5px 10px;
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.ribbon-button {
-  background-color: transparent;
-  border: none;
-  padding: 5px 8px;
-  margin: 0 2px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 12px;
-}
-
-.ribbon-button:hover {
-  background-color: #e6e6e6;
-}
-
-.ribbon-button i {
-  font-size: 16px;
-  margin-bottom: 2px;
-}
-
-.ribbon-divider {
-  width: 1px;
-  background-color: #d0d0d0;
-  margin: 0 5px;
-}
-
-.status-bar {
-  background-color: #f3f3f3;
-  border-top: 1px solid #e0e0e0;
-  padding: 5px 10px;
-  font-size: 12px;
-  display: flex;
-  justify-content: space-between;
+/* 印刷時のスタイル */
+@media print {
+  .excel-header, .excel-ribbon, .status-bar {
+    display: none;
+  }
+  
+  .spreadsheet-container {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  .hot-container {
+    overflow: visible !important;
+  }
+  
+  body {
+    background-color: white;
+  }
+  
+  /* A4サイズに合わせた印刷設定 */
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
 }
