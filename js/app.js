@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log('初期化の再確認');
       initialize();
     }
-  }, 1000);
+  }, 1500); // 1.5秒後に再確認（時間を延長）
   
   // 保存ボタンのイベント
   saveButton.addEventListener('click', () => {
@@ -80,8 +80,13 @@ document.addEventListener('DOMContentLoaded', function() {
   openButton.addEventListener('click', () => {
     try {
       console.log('カルテ一覧を表示します');
-      KarteManager.loadKarteList();
+      // カルテ一覧をロードする前にモーダルのスタイルを確認
       karteListModal.style.display = 'block';
+      
+      // モーダルが表示された後にカルテ一覧をロード
+      setTimeout(() => {
+        KarteManager.loadKarteList();
+      }, 100);
     } catch (error) {
       console.error('カルテ一覧の読み込み中にエラーが発生しました:', error);
       alert(`カルテ一覧の読み込み中にエラーが発生しました: ${error.message}`);
@@ -182,6 +187,14 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('Handsontableが見つかりません。再初期化します。');
         SpreadsheetManager.initialize();
       }
-    }, 1500);
+      
+      // モーダル要素とテーブルの存在確認
+      const karteListBody = document.getElementById('karte-list-body');
+      if (karteListBody) {
+        console.log('カルテ一覧テーブルを確認:', karteListBody);
+      } else {
+        console.error('カルテ一覧テーブルが見つかりません');
+      }
+    }, 2000); // 2秒後に確認（時間を延長）
   });
 });
