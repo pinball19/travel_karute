@@ -58,12 +58,55 @@ const KarteManager = {
    * @return {Array} シートデータ
    */
   parseSheetData: function(data) {
-    // シートデータがない場合はテンプレートを返す
-    if (!data || !data[APP_CONFIG.SHEET_DATA_FIELD]) {
+    // シリアライズされたデータがない場合はテンプレートを返す
+    if (!data || !data.serializedSheetData) {
+      // 古い形式のデータ互換性のために確認
+      if (data && data[APP_CONFIG.SHEET_DATA_FIELD]) {
+        return data[APP_CONFIG.SHEET_DATA_FIELD];
+      }
       return UNIFIED_TEMPLATE;
     }
     
-    return data[APP_CONFIG.SHEET_DATA_FIELD];
+    const serialized = data.serializedSheetData;
+    const result = [];
+    
+    // 行数を特定
+    const rowKeys = Object.keys(serialized)
+      .filter(key => key.startsWith('row'))
+      .sort((a, b) => {
+        const numA = parseInt(a.substring(3));
+        const numB = parseInt(b.substring(3));
+        return numA - numB;
+      });
+    
+    // 各行を復元
+    rowKeys.forEach(rowKey => {
+      const rowObj = serialized[rowKey];
+      const row = [];
+      
+      // 列数を特定
+      const colKeys = Object.keys(rowObj)
+        .filter(key => key.startsWith('col'))
+        .sort((a, b) => {
+          const numA = parseInt(a.substring(3));
+          const numB = parseInt(b.substring(3));
+          return numA - numB;
+        });
+      
+      // 各列を復元
+      colKeys.forEach(colKey => {
+        row.push(rowObj[colKey]);
+      });
+      
+      result.push(row);
+    });
+    
+    // 結果が空の場合はテンプレートを返す
+    if (result.length === 0) {
+      return UNIFIED_TEMPLATE;
+    }
+    
+    return result;
   },
   
   /**
@@ -146,10 +189,15 @@ const KarteManager = {
     // カルテ情報を抽出
     const karteInfo = this.extractKarteInfo(sheetData);
     
+    // Firestoreに保存するためにシートデータを適切な形式に変換
+    // 2次元配列を直接保存せず、シリアライズして保存する
+    const serializedSheetData = this.serializeSheetData(sheetData);
+    
     // 保存するデータを準備
     const karteData = {
       karteInfo: karteInfo,
-      [APP_CONFIG.SHEET_DATA_FIELD]: sheetData,
+      // シリアライズしたデータを保存
+      serializedSheetData: serializedSheetData,
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     };
     
@@ -195,6 +243,28 @@ const KarteManager = {
         
         alert(`保存中にエラーが発生しました: ${error.message}`);
       });
+  },
+  
+  /**
+   * シートデータをFirestore用にシリアライズする
+   * @param {Array} sheetData - 2次元配列のシートデータ
+   * @return {Object} シリアライズしたデータ
+   */
+  serializeSheetData: function(sheetData) {
+    // 2次元配列を各行を文字列に変換して保存
+    const serialized = {};
+    
+    sheetData.forEach((row, rowIndex) => {
+      // 各行をオブジェクトに変換
+      const rowObj = {};
+      row.forEach((cell, colIndex) => {
+        // null や undefined の場合は空文字に変換
+        rowObj[`col${colIndex}`] = cell != null ? String(cell) : '';
+      });
+      serialized[`row${rowIndex}`] = rowObj;
+    });
+    
+    return serialized;
   },
   
   /**
