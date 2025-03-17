@@ -28,6 +28,10 @@ const SpreadsheetManager = {
       // ワードラップを有効化（テキスト折り返し）
       wordWrap: true,
       
+      // 最小表示行数を設定（30行以上表示）
+      minRows: 30,
+      minSpareRows: 5, // 空の行を追加して下部に余白を確保
+      
       // セルのカスタマイズ
       cells: function(row, col) {
         const cellProperties = {};
@@ -55,7 +59,14 @@ const SpreadsheetManager = {
         }
         
         return cellProperties;
-      }
+      },
+      
+      // 行ヘッダーを常に表示
+      fixedRowsTop: 0,
+      fixedColumnsLeft: 0,
+      
+      // スクロール設定
+      viewportRowRenderingOffset: 30, // より多くの行を事前にレンダリング
     };
     
     // Handsontableインスタンスを作成
@@ -68,6 +79,14 @@ const SpreadsheetManager = {
         height: container.offsetHeight
       });
     });
+    
+    // 初期化後、全体を表示するためにセルの再レンダリングを実行
+    setTimeout(() => {
+      this.hot.render();
+      
+      // スクロールを一番上に戻す
+      container.scrollTop = 0;
+    }, 100);
   },
   
   /**
@@ -116,7 +135,19 @@ const SpreadsheetManager = {
    */
   loadData: function(data) {
     if (!this.hot) return;
+    
+    // データが30行未満の場合、30行になるよう空行を追加
+    if (data.length < 30) {
+      const emptyRows = Array(30 - data.length).fill().map(() => Array(8).fill(''));
+      data = [...data, ...emptyRows];
+    }
+    
     this.hot.loadData(data);
+    
+    // データロード後、スクロールを一番上に戻す
+    setTimeout(() => {
+      document.querySelector('.spreadsheet-container').scrollTop = 0;
+    }, 100);
   },
   
   /**
