@@ -31,12 +31,15 @@ const SpreadsheetManager = {
         colHeaders: true, // 列ヘッダー（A,B,C...）を表示
         contextMenu: true, // シンプルに true を指定
         manualColumnResize: true,
-        manualRowResize: true,
+        manualRowResize: false, // 行の高さを手動変更不可に設定
         licenseKey: 'non-commercial-and-evaluation',
         mergeCells: UNIFIED_MERGED_CELLS,
         
         // カラム幅を設定
         colWidths: COLUMN_WIDTHS,
+        
+        // 行の高さを固定
+        rowHeights: 25,
         
         // 表示設定 - スクロールバーを無効化
         width: '100%',
@@ -57,6 +60,12 @@ const SpreadsheetManager = {
         outsideClickDeselects: false, // 外部クリックで選択解除しない
         fragmentSelection: false,     // モバイルでのセル選択を改善
         
+        // 固定列数
+        fixedColumnsLeft: 0, // 左側の固定列を無効化
+        
+        // ヘッダー固定
+        fixedRowsTop: 0, // ヘッダー行を固定しない
+        
         // 挿入・削除時のフック
         afterCreateRow: function(index, amount) {
           console.log(`${amount}行が位置${index}に挿入されました`);
@@ -67,6 +76,15 @@ const SpreadsheetManager = {
           console.log(`${amount}行が位置${index}から削除されました`);
           SpreadsheetManager.updateAfterRowOperation();
         },
+        
+        // 描画フック
+        afterRender: function() {
+          // レンダリング後に行の高さを調整
+          SpreadsheetManager.adjustRowHeights();
+        },
+        
+        // 行の高さ自動調整を無効化
+        autoRowSize: false,
         
         // セルのカスタマイズ
         cells: function(row, col) {
@@ -96,17 +114,6 @@ const SpreadsheetManager = {
           }
           
           return cellProperties;
-        },
-        
-        // 全セルを選択させない
-        disableVisualSelection: false,
-        
-        // セルの編集可否を設定
-        readOnly: false,
-        
-        // 行の高さ自動調整
-        autoRowSize: {
-          syncLimit: 1000
         }
       };
       
@@ -127,6 +134,9 @@ const SpreadsheetManager = {
             holder.style.overflowX = 'visible';
             holder.style.overflowY = 'visible';
           });
+          
+          // 列と行の位置を調整
+          this.fixRowAlignment();
           
           container.scrollTop = 0;
         }
@@ -149,10 +159,61 @@ const SpreadsheetManager = {
         });
         this.hot.render();
         
+        // 列と行の位置を調整
+        this.fixRowAlignment();
+        
         // モバイルデバイスの場合は追加の調整
         this.adjustForMobile();
       }
     });
+  },
+  
+  /**
+   * 行の高さを調整する
+   */
+  adjustRowHeights: function() {
+    if (!this.hot) return;
+    
+    // セクションヘッダーとその他の行で高さを分ける
+    const rowCount = this.hot.countRows();
+    const rowHeights = Array(rowCount).fill(25); // デフォルトは25px
+    
+    // セクションヘッダーの行は高さを大きく
+    SECTION_STYLES.sectionHeaders.forEach(rowIndex => {
+      if (rowIndex < rowCount) {
+        rowHeights[rowIndex] = 30;
+      }
+    });
+    
+    // 行の高さを設定
+    this.hot.updateSettings({
+      rowHeights: rowHeights
+    });
+  },
+  
+  /**
+   * 列と行の位置ずれを修正する
+   */
+  fixRowAlignment: function() {
+    if (!this.hot) return;
+    
+    // すべての行の高さを同期
+    const rowCount = this.hot.countRows();
+    
+    // 左側固定列と本体の行の高さを同期
+    for (let i = 0; i < rowCount; i++) {
+      const mainRow = document.querySelector(`.ht_master .htCore tr:nth-child(${i + 1})`);
+      const leftRow = document.querySelector(`.ht_clone_left .htCore tr:nth-child(${i + 1})`);
+      
+      if (mainRow && leftRow) {
+        const height = `${mainRow.offsetHeight}px`;
+        mainRow.style.height = height;
+        leftRow.style.height = height;
+      }
+    }
+    
+    // テーブル全体を描画しなおす
+    this.hot.render();
   },
   
   /**
@@ -336,6 +397,9 @@ const SpreadsheetManager = {
       
       // 再レンダリング
       this.hot.render();
+      
+      // 行の位置ずれを修正
+      this.fixRowAlignment();
     } catch (error) {
       console.error('行操作後の更新中にエラーが発生しました:', error);
     }
@@ -414,6 +478,9 @@ const SpreadsheetManager = {
         
         // 再レンダリング
         this.hot.render();
+        
+        // 行の位置ずれを修正
+        this.fixRowAlignment();
         
         // スクロールバーの設定を上書き
         const wtHolders = document.querySelectorAll('.wtHolder');
