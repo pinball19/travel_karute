@@ -34,7 +34,7 @@ const KarteManager = {
             setTimeout(() => {
               // カルテNo欄（通常3行目、B列）に値を設定
               SpreadsheetManager.setDataAtCell(2, 1, karteInfo.karteNo);
-            }, 300);
+            }, 500); // タイムアウト時間を延長
           }
           
           // 最終更新日時の表示を更新
@@ -274,7 +274,9 @@ const KarteManager = {
     const karteListBody = document.getElementById('karte-list-body');
     
     // 一覧をクリア
-    karteListBody.innerHTML = '';
+    karteListBody.innerHTML = '<tr><td colspan="8">読み込み中...</td></tr>';
+    
+    console.log('カルテ一覧を読み込みます');
     
     // カルテ一覧を取得
     db.collection(APP_CONFIG.KARTE_COLLECTION)
@@ -282,6 +284,11 @@ const KarteManager = {
       .limit(50) // 最大50件まで表示
       .get()
       .then(querySnapshot => {
+        console.log(`取得したカルテ数: ${querySnapshot.docs.length}`);
+        
+        // 一覧をクリア
+        karteListBody.innerHTML = '';
+        
         if (querySnapshot.empty) {
           karteListBody.innerHTML = '<tr><td colspan="8">カルテがありません</td></tr>';
           return;
