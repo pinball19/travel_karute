@@ -28,7 +28,7 @@ const SpreadsheetManager = {
       const options = {
         data: UNIFIED_TEMPLATE,
         rowHeaders: true,
-        colHeaders: false,
+        colHeaders: true, // 列ヘッダー（A,B,C...）を表示
         contextMenu: true,
         manualColumnResize: true,
         manualRowResize: true,
