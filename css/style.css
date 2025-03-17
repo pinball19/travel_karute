@@ -10,6 +10,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  max-height: 100vh; /* 追加：最大高さを制限 */
 }
 
 /* Excel風ヘッダー */
@@ -20,6 +21,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0; /* 追加：縮小されないようにする */
 }
 
 /* Excel風リボン */
@@ -29,6 +31,7 @@ body {
   padding: 5px 10px;
   display: flex;
   gap: 10px;
+  flex-shrink: 0; /* 追加：縮小されないようにする */
 }
 
 .ribbon-button {
@@ -62,8 +65,9 @@ body {
 /* スプレッドシートコンテナ */
 .spreadsheet-container {
   flex-grow: 1;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
+  min-height: 0; /* 追加：スクロールを適切に機能させるため */
 }
 
 .hot-container {
@@ -80,6 +84,9 @@ body {
   font-size: 12px;
   display: flex;
   justify-content: space-between;
+  flex-shrink: 0; /* 追加：縮小されないようにする */
+  z-index: 100; /* 追加：他の要素より前面に表示 */
+  position: relative; /* 追加：z-indexを有効にするため */
 }
 
 /* Handsontableをよりエクセルに近づけるためのスタイル */
