@@ -38,9 +38,9 @@ const SpreadsheetManager = {
         // カラム幅を設定
         colWidths: COLUMN_WIDTHS,
         
-        // 表示設定
-        width: container.offsetWidth,
-        height: container.offsetHeight,
+        // 表示設定 - スクロールバーを無効化
+        width: '100%',
+        height: '100%',
         
         // テキスト折り返し
         wordWrap: true,
@@ -48,6 +48,14 @@ const SpreadsheetManager = {
         // 最小表示行数
         minRows: 30,
         minSpareRows: 5,
+        
+        // スクロールバー設定
+        viewportColumnRenderingOffset: 30, // 表示範囲外の列も描画
+        viewportRowRenderingOffset: 30,    // 表示範囲外の行も描画
+        
+        // モバイル対応設定
+        outsideClickDeselects: false, // 外部クリックで選択解除しない
+        fragmentSelection: false,     // モバイルでのセル選択を改善
         
         // 挿入・削除時のフック
         afterCreateRow: function(index, amount) {
@@ -112,9 +120,21 @@ const SpreadsheetManager = {
         if (this.hot) {
           console.log('Handsontableを再レンダリングします');
           this.hot.render();
+          
+          // スクロールバーの設定を上書き
+          const wtHolders = document.querySelectorAll('.wtHolder');
+          wtHolders.forEach(holder => {
+            holder.style.overflowX = 'visible';
+            holder.style.overflowY = 'visible';
+          });
+          
           container.scrollTop = 0;
         }
       }, 200);
+      
+      // モバイルデバイスで操作しやすいように調整
+      this.adjustForMobile();
+      
     } catch (error) {
       console.error('Handsontableの初期化中にエラーが発生しました:', error);
     }
@@ -124,12 +144,45 @@ const SpreadsheetManager = {
       if (this.hot) {
         console.log('リサイズによりHandsontableを更新します');
         this.hot.updateSettings({
-          width: container.offsetWidth,
-          height: container.offsetHeight
+          width: '100%',
+          height: '100%'
         });
         this.hot.render();
+        
+        // モバイルデバイスの場合は追加の調整
+        this.adjustForMobile();
       }
     });
+  },
+  
+  /**
+   * モバイルデバイス向けの調整
+   */
+  adjustForMobile: function() {
+    if (window.innerWidth <= 768) { // スマホサイズの場合
+      // ヘッダーの高さを調整
+      const colHeaders = document.querySelectorAll('.ht_clone_top .htCore th');
+      colHeaders.forEach(th => {
+        th.style.height = '30px';
+        th.style.padding = '2px';
+        th.style.fontSize = '12px';
+      });
+      
+      // 行ヘッダーの幅を調整
+      const rowHeaders = document.querySelectorAll('.ht_clone_left .htCore th');
+      rowHeaders.forEach(th => {
+        th.style.width = '30px';
+        th.style.padding = '2px';
+        th.style.fontSize = '12px';
+      });
+      
+      // セルのサイズを調整
+      const cells = document.querySelectorAll('.htCore td');
+      cells.forEach(td => {
+        td.style.padding = '4px';
+        td.style.fontSize = '12px';
+      });
+    }
   },
   
   /**
@@ -361,6 +414,13 @@ const SpreadsheetManager = {
         
         // 再レンダリング
         this.hot.render();
+        
+        // スクロールバーの設定を上書き
+        const wtHolders = document.querySelectorAll('.wtHolder');
+        wtHolders.forEach(holder => {
+          holder.style.overflowX = 'visible';
+          holder.style.overflowY = 'visible';
+        });
       }, 100);
     } catch (error) {
       console.error('データロード中にエラーが発生しました:', error);
