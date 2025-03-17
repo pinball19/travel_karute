@@ -91,7 +91,7 @@
   </div>
   
   <!-- 保存中インジケーター -->
-  <div id="saving-indicator" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #333; color: white; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+  <div id="saving-indicator" style="display: none; position: fixed; bottom: 20px; right: 20px; background-color: #333; color: white; padding: 10px 20px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 1000;">
     <i class="fas fa-spinner fa-spin"></i> 保存中...
   </div>
   
@@ -130,6 +130,18 @@
             container.scrollLeft += e.deltaX;
           }
         });
+      }
+      
+      // カルテ一覧モーダルのチェック
+      const modal = document.getElementById('karte-list-modal');
+      if (modal) {
+        console.log('モーダル要素を確認:', modal);
+      }
+      
+      // カルテ一覧テーブルのチェック
+      const karteListBody = document.getElementById('karte-list-body');
+      if (karteListBody) {
+        console.log('カルテ一覧テーブル要素を確認:', karteListBody);
       }
       
       // スマホのタッチスクロールを改善
