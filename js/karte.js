@@ -5,9 +5,6 @@ const KarteManager = {
   // 現在のカルテID
   currentKarteId: null,
   
-  // 現在のシートインデックス
-  currentSheetIndex: 0,
-  
   /**
    * カルテ一覧を読み込む
    */
@@ -26,7 +23,7 @@ const KarteManager = {
         
         snapshot.forEach(doc => {
           const data = doc.data();
-          const karteInfo = data.karteInfo || this.extractKarteInfo(data.basicInfoSheet || []);
+          const karteInfo = data.karteInfo || this.extractKarteInfo(data.sheetData || []);
           
           const row = document.createElement('tr');
           row.innerHTML = `
@@ -82,13 +79,18 @@ const KarteManager = {
       .then(doc => {
         if (doc.exists) {
           const data = doc.data();
-          const karteInfo = data.karteInfo || this.extractKarteInfo(data.basicInfoSheet || []);
+          const karteInfo = data.karteInfo || this.extractKarteInfo(data.sheetData || []);
           
           // カルテIDの表示を更新
           document.getElementById('current-karte-id').textContent = `カルテNo: ${karteInfo.karteNo || karteId}`;
           
-          // 現在のシートに対応するデータをロード
-          this.changeSheet(this.currentSheetIndex);
+          // シートデータをロード
+          if (data.sheetData) {
+            SpreadsheetManager.loadData(data.sheetData);
+          } else {
+            // データがない場合はテンプレートをロード
+            SpreadsheetManager.loadUnifiedTemplate();
+          }
           
           // 最終更新日時の表示を更新
           if (data.lastUpdated) {
@@ -119,70 +121,13 @@ const KarteManager = {
         if (this.currentKarteId === karteId) {
           this.currentKarteId = null;
           document.getElementById('current-karte-id').textContent = '新規カルテ';
-          this.changeSheet(this.currentSheetIndex); // テンプレートをロード
+          SpreadsheetManager.loadUnifiedTemplate(); // テンプレートをロード
           document.getElementById('last-saved').textContent = '保存されていません';
         }
       })
       .catch(error => {
         console.error('Error deleting karte:', error);
         alert(`削除エラー: ${error.message}`);
-      });
-  },
-  
-  /**
-   * シートを変更する
-   * @param {number} sheetIndex - シートのインデックス
-   */
-  changeSheet: function(sheetIndex) {
-    this.currentSheetIndex = sheetIndex;
-    
-    // 現在のデータを保存（編集中のカルテがある場合）
-    if (this.currentKarteId) {
-      this.saveCurrentSheetData();
-    }
-    
-    if (this.currentKarteId) {
-      // カルテデータがある場合はそのデータをロード
-      const sheetType = APP_CONFIG.SHEET_TYPES[sheetIndex];
-      
-      db.collection(APP_CONFIG.KARTE_COLLECTION).doc(this.currentKarteId).get()
-        .then(doc => {
-          if (doc.exists && doc.data()[sheetType]) {
-            SpreadsheetManager.loadData(doc.data()[sheetType]);
-          } else {
-            // データがない場合はテンプレートをロード
-            SpreadsheetManager.loadTemplateBySheetIndex(sheetIndex);
-          }
-        })
-        .catch(error => {
-          console.error(`Error loading ${sheetType}:`, error);
-          // エラー時もテンプレートをロード
-          SpreadsheetManager.loadTemplateBySheetIndex(sheetIndex);
-        });
-    } else {
-      // 新規カルテの場合はテンプレートをロード
-      SpreadsheetManager.loadTemplateBySheetIndex(sheetIndex);
-    }
-  },
-  
-  /**
-   * 現在のシートデータを保存
-   */
-  saveCurrentSheetData: function() {
-    if (!this.currentKarteId) return;
-    
-    const sheetData = SpreadsheetManager.getData();
-    const sheetType = APP_CONFIG.SHEET_TYPES[this.currentSheetIndex];
-    
-    const updateData = {};
-    updateData[sheetType] = sheetData;
-    
-    db.collection(APP_CONFIG.KARTE_COLLECTION).doc(this.currentKarteId).update(updateData)
-      .then(() => {
-        document.getElementById('last-saved').textContent = new Date().toLocaleString();
-      })
-      .catch(error => {
-        console.error('Error saving sheet data:', error);
       });
   },
   
@@ -194,8 +139,8 @@ const KarteManager = {
       this.currentKarteId = null;
       document.getElementById('current-karte-id').textContent = '新規カルテ';
       
-      // 現在のシートを初期化
-      this.changeSheet(this.currentSheetIndex);
+      // テンプレートをロード
+      SpreadsheetManager.loadUnifiedTemplate();
       document.getElementById('last-saved').textContent = '保存されていません';
     }
   },
@@ -206,63 +151,27 @@ const KarteManager = {
   saveKarte: function() {
     const sheetData = SpreadsheetManager.getData();
     
-    // 基本情報シートからカルテ情報を抽出
-    let karteInfo = {};
-    if (this.currentSheetIndex === 0) {
-      karteInfo = this.extractKarteInfo(sheetData);
-    } else if (this.currentKarteId) {
-      // 他のシートの場合は既存のカルテ情報を取得
-      const getKarteInfo = async () => {
-        try {
-          const doc = await db.collection(APP_CONFIG.KARTE_COLLECTION).doc(this.currentKarteId).get();
-          if (doc.exists) {
-            return doc.data().karteInfo || this.extractKarteInfo(doc.data().basicInfoSheet || []);
-          }
-        } catch (error) {
-          console.error('Error getting karte info:', error);
-        }
-        return {};
-      };
-      
-      getKarteInfo().then(info => {
-        karteInfo = info;
-        this.continueKarteSave(sheetData, karteInfo);
-      });
-      return;
-    }
+    // カルテ情報を抽出
+    const karteInfo = this.extractKarteInfo(sheetData);
     
-    this.continueKarteSave(sheetData, karteInfo);
-  },
-  
-  /**
-   * カルテ保存の続き
-   * @param {Array} sheetData - シートデータ
-   * @param {Object} karteInfo - カルテ情報
-   */
-  continueKarteSave: function(sheetData, karteInfo) {
     if (!this.currentKarteId) {
       // 新規カルテの場合
       const karteNumber = prompt('新しいカルテ番号を入力してください:');
       if (!karteNumber) return;
       
-      // 基本情報シートの場合、カルテ番号をセットする
-      if (this.currentSheetIndex === 0) {
-        SpreadsheetManager.setDataAtCell(1, 1, karteNumber);
-        karteInfo.karteNo = karteNumber;
-      } else {
-        karteInfo.karteNo = karteNumber;
-      }
+      // カルテ番号をセットする
+      SpreadsheetManager.setDataAtCell(2, 1, karteNumber);
+      karteInfo.karteNo = karteNumber;
       
       this.currentKarteId = db.collection(APP_CONFIG.KARTE_COLLECTION).doc().id;
     }
     
     document.getElementById('saving-indicator').style.display = 'block';
     
-    // 現在のシートデータを準備
-    const sheetType = APP_CONFIG.SHEET_TYPES[this.currentSheetIndex];
+    // 保存データの準備
     const updateData = {
       karteInfo: karteInfo,
-      [sheetType]: sheetData,
+      sheetData: sheetData,
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     };
     
@@ -286,21 +195,21 @@ const KarteManager = {
   },
   
   /**
-   * 基本情報シートからカルテ情報を抽出
+   * シートデータからカルテ情報を抽出
    * @param {Array} sheetData - シートデータ
    * @return {Object} カルテ情報
    */
   extractKarteInfo: function(sheetData) {
     try {
       const karteInfo = {
-        karteNo: sheetData[1][1] || '',
-        staffName: sheetData[0][3] || '',
-        customerName: sheetData[1][3] || '',
-        groupName: sheetData[1][5] || '',
-        stayDate: sheetData[2][1] || '',
-        stayNights: sheetData[2][3] || '',
-        totalPersons: sheetData[2][5] || '',
-        destination: sheetData[3][3] || ''
+        karteNo: sheetData[2][1] || '',        // カルテNo
+        staffName: sheetData[1][3] || '',      // 担当
+        customerName: sheetData[2][3] || '',   // 名前
+        groupName: sheetData[2][5] || '',      // 団体名
+        stayDate: sheetData[3][1] || '',       // 宿泊日
+        stayNights: sheetData[3][3] || '',     // 泊数
+        totalPersons: sheetData[3][5] || '',   // 合計人数
+        destination: sheetData[4][3] || ''     // 行先
       };
       return karteInfo;
     } catch (error) {
