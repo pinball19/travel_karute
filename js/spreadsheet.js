@@ -29,7 +29,7 @@ const SpreadsheetManager = {
         data: UNIFIED_TEMPLATE,
         rowHeaders: true,
         colHeaders: true, // 列ヘッダー（A,B,C...）を表示
-        contextMenu: true,
+        contextMenu: true, // シンプルに true を指定
         manualColumnResize: true,
         manualRowResize: true,
         licenseKey: 'non-commercial-and-evaluation',
@@ -96,11 +96,6 @@ const SpreadsheetManager = {
         // セルの編集可否を設定
         readOnly: false,
         
-        // セル結合の調整
-        afterGetColHeader: function(col, TH) {
-          // 列ヘッダーのスタイル調整
-        },
-        
         // 行の高さ自動調整
         autoRowSize: {
           syncLimit: 1000
@@ -111,9 +106,6 @@ const SpreadsheetManager = {
       // Handsontableインスタンスを作成
       this.hot = new Handsontable(container, options);
       console.log('Handsontableの初期化完了');
-      
-      // 右クリックメニューのカスタマイズ
-      this.customizeContextMenu();
       
       // レンダリングを確実に行う
       setTimeout(() => {
@@ -141,225 +133,159 @@ const SpreadsheetManager = {
   },
   
   /**
-   * 右クリックメニューのカスタマイズ
-   */
-  customizeContextMenu: function() {
-    if (!this.hot) return;
-    
-    // 既存のコンテキストメニュー設定を取得
-    const contextMenuItems = this.hot.getSettings().contextMenu;
-    
-    // 行挿入操作の後に背景色を修正するためのラッパー関数
-    const customInsertRow = {
-      name: '行を挿入',
-      callback: function(key, selection) {
-        // 既存の行挿入処理を実行
-        Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.row_above.callback.call(this, key, selection);
-        
-        // セクションスタイルの再適用
-        SpreadsheetManager.updateAfterRowOperation();
-      }
-    };
-    
-    // カスタマイズしたコンテキストメニュー
-    const customContextMenu = {
-      items: {
-        'row_above': customInsertRow,
-        'row_below': {
-          name: '行を下に挿入',
-          callback: function(key, selection) {
-            Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.row_below.callback.call(this, key, selection);
-            SpreadsheetManager.updateAfterRowOperation();
-          }
-        },
-        'remove_row': {
-          name: '行を削除',
-          callback: function(key, selection) {
-            Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.remove_row.callback.call(this, key, selection);
-            SpreadsheetManager.updateAfterRowOperation();
-          }
-        },
-        'separator1': Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.separator1,
-        'copy': Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.copy,
-        'cut': Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.cut,
-        'separator2': Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.separator2,
-        'alignment': Handsontable.plugins.ContextMenu.DEFAULT_ITEMS.alignment
-      }
-    };
-    
-    // コンテキストメニューを更新
-    this.hot.updateSettings({
-      contextMenu: customContextMenu
-    });
-  },
-  
-  /**
    * 行の操作（挿入/削除）後に背景色などを更新
    */
   updateAfterRowOperation: function() {
     if (!this.hot) return;
     
-    // データを取得
-    const data = this.hot.getData();
-    
-    // 既存のマージセル設定を取得
-    const currentMerges = this.hot.getSettings().mergeCells || [];
-    
-    // セクションヘッダーの位置を探し、スタイル設定を更新
-    let updatedSectionHeaders = [];
-    let updatedHeaderRows = [];
-    let updatedTotalRows = [];
-    
-    // 基本情報セクション
-    const basicSectionIndex = 0;
-    updatedSectionHeaders.push(basicSectionIndex);
-    updatedHeaderRows.push(basicSectionIndex + 1);
-    updatedHeaderRows.push(basicSectionIndex + 2);
-    
-    // 入金情報セクション
-    let paymentSectionIndex = -1;
-    for (let i = basicSectionIndex + 3; i < data.length; i++) {
-      if (data[i][0] === '◆ 入金情報') {
-        paymentSectionIndex = i;
-        break;
-      }
-    }
-    
-    if (paymentSectionIndex > 0) {
-      updatedSectionHeaders.push(paymentSectionIndex);
-      updatedHeaderRows.push(paymentSectionIndex + 1);
+    try {
+      // データを取得
+      const data = this.hot.getData();
       
-      // 入金合計行を探す
-      for (let i = paymentSectionIndex + 2; i < data.length; i++) {
-        if (data[i][0] === 'A；入金合計') {
-          updatedTotalRows.push(i);
+      // セクションヘッダーの位置を探し、スタイル設定を更新
+      let updatedSectionHeaders = [];
+      let updatedHeaderRows = [];
+      let updatedTotalRows = [];
+      let updatedSpacerRows = [];
+      
+      // 基本情報セクション
+      const basicSectionIndex = 0;
+      updatedSectionHeaders.push(basicSectionIndex);
+      updatedHeaderRows.push(basicSectionIndex + 1);
+      updatedHeaderRows.push(basicSectionIndex + 2);
+      updatedSpacerRows.push(basicSectionIndex + 5);
+      
+      // 入金情報セクション
+      let paymentSectionIndex = -1;
+      for (let i = basicSectionIndex + 3; i < data.length; i++) {
+        if (data[i][0] === '◆ 入金情報') {
+          paymentSectionIndex = i;
           break;
         }
       }
-    }
-    
-    // 支払情報セクション
-    let expenseSectionIndex = -1;
-    for (let i = paymentSectionIndex + 2; i < data.length; i++) {
-      if (data[i][0] === '◆ 支払情報') {
-        expenseSectionIndex = i;
-        break;
-      }
-    }
-    
-    if (expenseSectionIndex > 0) {
-      updatedSectionHeaders.push(expenseSectionIndex);
-      updatedHeaderRows.push(expenseSectionIndex + 1);
       
-      // 支払合計行を探す
-      for (let i = expenseSectionIndex + 2; i < data.length; i++) {
-        if (data[i][0] === 'B；支払合計') {
-          updatedTotalRows.push(i);
-          break;
-        }
-      }
-    }
-    
-    // 収支情報セクション
-    let profitSectionIndex = -1;
-    for (let i = expenseSectionIndex + 2; i < data.length; i++) {
-      if (data[i][0] === '◆ 収支情報') {
-        profitSectionIndex = i;
-        break;
-      }
-    }
-    
-    if (profitSectionIndex > 0) {
-      updatedSectionHeaders.push(profitSectionIndex);
-      updatedHeaderRows.push(profitSectionIndex + 1);
-      
-      // 上席チェック行を探す
-      for (let i = profitSectionIndex + 2; i < data.length; i++) {
-        if (data[i][0] === '上席チェック') {
-          updatedHeaderRows.push(i);
-          break;
-        }
-      }
-    }
-    
-    // マージセルの更新
-    const updatedMerges = [];
-    
-    // 基本情報セクションのマージセル
-    updatedMerges.push({row: basicSectionIndex, col: 0, rowspan: 1, colspan: 8});
-    updatedMerges.push({row: basicSectionIndex + 1, col: 0, rowspan: 1, colspan: 2});
-    
-    // 入金情報セクションのマージセル
-    if (paymentSectionIndex > 0) {
-      updatedMerges.push({row: paymentSectionIndex, col: 0, rowspan: 1, colspan: 8});
-      
-      // 入金合計行
-      const paymentTotalIndex = updatedTotalRows.find(idx => data[idx][0] === 'A；入金合計');
-      if (paymentTotalIndex) {
-        updatedMerges.push({row: paymentTotalIndex, col: 0, rowspan: 1, colspan: 7});
-      }
-    }
-    
-    // 支払情報セクションのマージセル
-    if (expenseSectionIndex > 0) {
-      updatedMerges.push({row: expenseSectionIndex, col: 0, rowspan: 1, colspan: 8});
-      
-      // 支払合計行
-      const expenseTotalIndex = updatedTotalRows.find(idx => data[idx][0] === 'B；支払合計');
-      if (expenseTotalIndex) {
-        updatedMerges.push({row: expenseTotalIndex, col: 0, rowspan: 1, colspan: 7});
-      }
-    }
-    
-    // 収支情報セクションのマージセル
-    if (profitSectionIndex > 0) {
-      updatedMerges.push({row: profitSectionIndex, col: 0, rowspan: 1, colspan: 8});
-      
-      // 上席チェック行
-      for (let i = profitSectionIndex + 2; i < data.length; i++) {
-        if (data[i][0] === '上席チェック') {
-          updatedMerges.push({row: i, col: 0, rowspan: 1, colspan: 2});
-          break;
-        }
-      }
-    }
-    
-    // スタイル情報を更新
-    SECTION_STYLES.sectionHeaders = updatedSectionHeaders;
-    SECTION_STYLES.headerRows = updatedHeaderRows;
-    SECTION_STYLES.totalRows = updatedTotalRows;
-    
-    // マージセルと設定を更新
-    this.hot.updateSettings({
-      mergeCells: updatedMerges,
-      cells: function(row, col) {
-        const cellProperties = {};
+      if (paymentSectionIndex > 0) {
+        updatedSectionHeaders.push(paymentSectionIndex);
+        updatedHeaderRows.push(paymentSectionIndex + 1);
+        updatedSpacerRows.push(paymentSectionIndex + 6);
         
-        // セクション見出し行のスタイル
-        if (updatedSectionHeaders.includes(row)) {
-          cellProperties.renderer = SpreadsheetManager.sectionHeaderRenderer;
-          cellProperties.readOnly = true;
+        // 入金合計行を探す
+        for (let i = paymentSectionIndex + 2; i < data.length; i++) {
+          if (data[i][0] === 'A；入金合計') {
+            updatedTotalRows.push(i);
+            break;
+          }
         }
-        // ヘッダー行のスタイル
-        else if (updatedHeaderRows.includes(row)) {
-          cellProperties.renderer = SpreadsheetManager.headerRenderer;
+      }
+      
+      // 支払情報セクション
+      let expenseSectionIndex = -1;
+      for (let i = (paymentSectionIndex > 0 ? paymentSectionIndex + 2 : basicSectionIndex + 6); i < data.length; i++) {
+        if (data[i][0] === '◆ 支払情報') {
+          expenseSectionIndex = i;
+          break;
         }
-        // 合計行のスタイル
-        else if (updatedTotalRows.includes(row)) {
-          cellProperties.renderer = SpreadsheetManager.totalRenderer;
+      }
+      
+      if (expenseSectionIndex > 0) {
+        updatedSectionHeaders.push(expenseSectionIndex);
+        updatedHeaderRows.push(expenseSectionIndex + 1);
+        updatedSpacerRows.push(expenseSectionIndex + 6);
+        
+        // 支払合計行を探す
+        for (let i = expenseSectionIndex + 2; i < data.length; i++) {
+          if (data[i][0] === 'B；支払合計') {
+            updatedTotalRows.push(i);
+            break;
+          }
+        }
+      }
+      
+      // 収支情報セクション
+      let profitSectionIndex = -1;
+      for (let i = (expenseSectionIndex > 0 ? expenseSectionIndex + 2 : basicSectionIndex + 12); i < data.length; i++) {
+        if (data[i][0] === '◆ 収支情報') {
+          profitSectionIndex = i;
+          break;
+        }
+      }
+      
+      if (profitSectionIndex > 0) {
+        updatedSectionHeaders.push(profitSectionIndex);
+        updatedHeaderRows.push(profitSectionIndex + 1);
+        
+        // 上席チェック行を探す
+        for (let i = profitSectionIndex + 2; i < data.length; i++) {
+          if (data[i][0] === '上席チェック') {
+            updatedHeaderRows.push(i);
+            break;
+          }
         }
         
-        // 1列目（項目名列）の設定
-        if (col === 0) {
-          cellProperties.wordWrap = true;
+        // 最後の数行を区切り行に
+        for (let i = profitSectionIndex + 5; i < Math.min(profitSectionIndex + 10, data.length); i++) {
+          updatedSpacerRows.push(i);
         }
-        
-        return cellProperties;
       }
-    });
-    
-    // 再レンダリング
-    this.hot.render();
+      
+      // マージセルの更新
+      const updatedMerges = [];
+      
+      // 基本情報セクションのマージセル
+      updatedMerges.push({row: basicSectionIndex, col: 0, rowspan: 1, colspan: 8});
+      updatedMerges.push({row: basicSectionIndex + 1, col: 0, rowspan: 1, colspan: 2});
+      
+      // 入金情報セクションのマージセル
+      if (paymentSectionIndex > 0) {
+        updatedMerges.push({row: paymentSectionIndex, col: 0, rowspan: 1, colspan: 8});
+        
+        // 入金合計行
+        const paymentTotalRow = updatedTotalRows.find(idx => data[idx] && data[idx][0] === 'A；入金合計');
+        if (paymentTotalRow) {
+          updatedMerges.push({row: paymentTotalRow, col: 0, rowspan: 1, colspan: 7});
+        }
+      }
+      
+      // 支払情報セクションのマージセル
+      if (expenseSectionIndex > 0) {
+        updatedMerges.push({row: expenseSectionIndex, col: 0, rowspan: 1, colspan: 8});
+        
+        // 支払合計行
+        const expenseTotalRow = updatedTotalRows.find(idx => data[idx] && data[idx][0] === 'B；支払合計');
+        if (expenseTotalRow) {
+          updatedMerges.push({row: expenseTotalRow, col: 0, rowspan: 1, colspan: 7});
+        }
+      }
+      
+      // 収支情報セクションのマージセル
+      if (profitSectionIndex > 0) {
+        updatedMerges.push({row: profitSectionIndex, col: 0, rowspan: 1, colspan: 8});
+        
+        // 上席チェック行
+        for (let i = profitSectionIndex + 2; i < data.length; i++) {
+          if (data[i] && data[i][0] === '上席チェック') {
+            updatedMerges.push({row: i, col: 0, rowspan: 1, colspan: 2});
+            break;
+          }
+        }
+      }
+      
+      // スタイル情報を更新
+      SECTION_STYLES.sectionHeaders = updatedSectionHeaders;
+      SECTION_STYLES.headerRows = updatedHeaderRows;
+      SECTION_STYLES.totalRows = updatedTotalRows;
+      SECTION_STYLES.spacerRows = updatedSpacerRows;
+      
+      // マージセルと設定を更新
+      this.hot.updateSettings({
+        mergeCells: updatedMerges
+      });
+      
+      // 再レンダリング
+      this.hot.render();
+    } catch (error) {
+      console.error('行操作後の更新中にエラーが発生しました:', error);
+    }
   },
   
   /**
