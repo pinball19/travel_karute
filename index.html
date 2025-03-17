@@ -8,6 +8,41 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/handsontable/13.1.0/handsontable.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* インラインスタイルの追加（特に印刷時の表示調整用） */
+    @media print {
+      .excel-header, .excel-ribbon, .status-bar {
+        display: none;
+      }
+      
+      .spreadsheet-container {
+        height: auto !important;
+      }
+      
+      .hot-container {
+        overflow: visible !important;
+      }
+      
+      /* A4サイズに合わせた印刷設定 */
+      @page {
+        size: A4 portrait;
+        margin: 1cm;
+      }
+    }
+    
+    /* テキスト折り返し用のスタイル */
+    .handsontable td {
+      white-space: pre-wrap !important;
+      vertical-align: top !important;
+    }
+    
+    /* セクションスタイル */
+    .section-header {
+      background-color: #4472C4;
+      color: white;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
   <!-- Excel風アプリケーション -->
@@ -50,14 +85,6 @@
       </button>
     </div>
     
-    <!-- シートタブ (Excel下部のタブ) -->
-    <div class="sheet-tabs">
-      <div class="sheet-tab active">基本情報</div>
-      <div class="sheet-tab">入金一覧</div>
-      <div class="sheet-tab">支払一覧</div>
-      <div class="sheet-tab">収支情報</div>
-    </div>
-    
     <!-- スプレッドシート本体 -->
     <div class="spreadsheet-container">
       <div id="hot-container" class="hot-container excel-theme"></div>
@@ -65,7 +92,7 @@
     
     <!-- ステータスバー -->
     <div class="status-bar">
-      <div>シート1</div>
+      <div>カルテシステム</div>
       <div>最終更新: <span id="last-saved">保存されていません</span></div>
       <div>接続状態: <span id="connection-status">オンライン</span></div>
     </div>
