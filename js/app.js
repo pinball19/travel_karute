@@ -10,21 +10,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const exportButton = document.getElementById('export-button');
   const printButton = document.getElementById('print-button');
   const fileImport = document.getElementById('file-import');
-  const sheetTabs = document.querySelectorAll('.sheet-tab');
   const closeModal = document.querySelector('.close-modal');
   const karteListModal = document.getElementById('karte-list-modal');
   
   // スプレッドシートの初期化
   SpreadsheetManager.initialize();
-  
-  // シートタブの切り替え処理
-  sheetTabs.forEach((tab, index) => {
-    tab.addEventListener('click', () => {
-      sheetTabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      KarteManager.changeSheet(index);
-    });
-  });
   
   // 保存ボタンのイベント
   saveButton.addEventListener('click', () => {
