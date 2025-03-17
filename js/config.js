@@ -23,16 +23,13 @@ const APP_CONFIG = {
   // Firestoreのコレクション名
   KARTE_COLLECTION: 'karte',
   
-  // 各シートのデータキー名
-  SHEET_TYPES: ['basicInfoSheet', 'paymentSheet', 'expenseSheet', 'profitSheet'],
-  
-  // シート名
-  SHEET_NAMES: ['基本情報', '入金一覧', '支払一覧', '収支情報'],
+  // カルテデータのフィールド名
+  SHEET_DATA_FIELD: 'sheetData',
   
   // Handsontableの設定
   HOT_OPTIONS: {
     rowHeaders: true,
-    colHeaders: true,
+    colHeaders: false, // 列ヘッダーは不要
     contextMenu: true,
     manualColumnResize: true,
     manualRowResize: true,
