@@ -42,6 +42,21 @@
       color: white;
       font-weight: bold;
     }
+    
+    /* ステータスバーが隠れないようにする */
+    .status-bar {
+      position: sticky;
+      bottom: 0;
+      background-color: #f3f2f1;
+      border-top: 1px solid #e1dfdd;
+      z-index: 100;
+    }
+    
+    /* スプレッドシートコンテナの調整 */
+    .spreadsheet-container {
+      max-height: calc(100vh - 120px); /* ヘッダー、リボン、ステータスバーの合計高さを引く */
+      overflow: auto;
+    }
   </style>
 </head>
 <body>
@@ -92,7 +107,7 @@
     
     <!-- ステータスバー -->
     <div class="status-bar">
-      <div>カルテシステム</div>
+      <div>シート1</div>
       <div>最終更新: <span id="last-saved">保存されていません</span></div>
       <div>接続状態: <span id="connection-status">オンライン</span></div>
     </div>
