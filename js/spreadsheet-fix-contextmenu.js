@@ -107,6 +107,16 @@ const SpreadsheetManager = {
         // 行の高さ自動調整
         autoRowSize: {
           syncLimit: 1000
+        },
+        
+        // データ変更後に合計を計算
+        afterChange: function(changes, source) {
+          if (source === 'edit' || source === 'paste') {
+            // 少し遅延させて実行（データが確実に更新された後）
+            setTimeout(() => {
+              SpreadsheetManager.calculateSums();
+            }, 100);
+          }
         }
       };
       
@@ -129,6 +139,9 @@ const SpreadsheetManager = {
           });
           
           container.scrollTop = 0;
+          
+          // 初期化時に合計を計算
+          this.calculateSums();
         }
       }, 200);
       
@@ -153,6 +166,77 @@ const SpreadsheetManager = {
         this.adjustForMobile();
       }
     });
+  },
+  
+  /**
+   * 入金合計と支払合計を計算する
+   */
+  calculateSums: function() {
+    if (!this.hot) return;
+    
+    try {
+      const data = this.hot.getData();
+      
+      // 入金情報の合計を計算（8行目から11行目、4列目の値を合計）
+      let paymentSum = 0;
+      for (let i = 8; i <= 11; i++) {
+        if (data[i] && data[i][4]) {
+          const value = parseFloat(data[i][4]);
+          if (!isNaN(value)) {
+            paymentSum += value;
+          }
+        }
+      }
+      
+      // 支払情報の合計を計算（16行目から19行目、5列目の値を合計）
+      let expenseSum = 0;
+      for (let i = 16; i <= 19; i++) {
+        if (data[i] && data[i][5]) {
+          const value = parseFloat(data[i][5]);
+          if (!isNaN(value)) {
+            expenseSum += value;
+          }
+        }
+      }
+      
+      // 入金合計を設定（12行目、4列目）
+      this.hot.setDataAtCell(12, 4, paymentSum > 0 ? paymentSum : '');
+      
+      // 支払合計を設定（20行目、5列目）
+      this.hot.setDataAtCell(20, 5, expenseSum > 0 ? expenseSum : '');
+      
+      // 収支情報を更新（24行目）
+      if (paymentSum > 0 || expenseSum > 0) {
+        // 利益額（収入 - 支出）
+        const profit = paymentSum - expenseSum;
+        this.hot.setDataAtCell(24, 2, profit !== 0 ? profit : '');
+        
+        // 利益率（利益額 / 収入 * 100）
+        if (paymentSum > 0) {
+          const profitRate = (profit / paymentSum * 100).toFixed(1);
+          this.hot.setDataAtCell(24, 1, profitRate + '%');
+        }
+        
+        // 旅行総額と支払総額
+        this.hot.setDataAtCell(24, 4, paymentSum > 0 ? paymentSum : '');
+        this.hot.setDataAtCell(24, 5, expenseSum > 0 ? expenseSum : '');
+        
+        // 人数を取得（4行目、5列目）
+        if (data[3] && data[3][5]) {
+          const persons = parseFloat(data[3][5]);
+          if (!isNaN(persons) && persons > 0) {
+            // 一人粗利を計算
+            const perPersonProfit = (profit / persons).toFixed(0);
+            this.hot.setDataAtCell(24, 3, perPersonProfit !== '0' ? perPersonProfit : '');
+            
+            // 人数を収支情報にもコピー
+            this.hot.setDataAtCell(24, 6, persons);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('合計計算中にエラーが発生しました:', error);
+    }
   },
   
   /**
@@ -206,6 +290,8 @@ const SpreadsheetManager = {
       updatedSectionHeaders.push(basicSectionIndex);
       updatedHeaderRows.push(basicSectionIndex + 1);
       updatedHeaderRows.push(basicSectionIndex + 2);
+      updatedHeaderRows.push(basicSectionIndex + 3); // 4行目も追加
+      updatedHeaderRows.push(basicSectionIndex + 4); // 5行目も追加
       updatedSpacerRows.push(basicSectionIndex + 5);
       
       // 入金情報セクション
@@ -336,6 +422,9 @@ const SpreadsheetManager = {
       
       // 再レンダリング
       this.hot.render();
+      
+      // 合計を再計算
+      this.calculateSums();
     } catch (error) {
       console.error('行操作後の更新中にエラーが発生しました:', error);
     }
@@ -421,6 +510,9 @@ const SpreadsheetManager = {
           holder.style.overflowX = 'visible';
           holder.style.overflowY = 'visible';
         });
+        
+        // 合計を計算
+        this.calculateSums();
       }, 100);
     } catch (error) {
       console.error('データロード中にエラーが発生しました:', error);
