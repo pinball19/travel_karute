@@ -20,6 +20,69 @@ document.addEventListener('DOMContentLoaded', function() {
   let lastChangeTime = 0;
   let autoSaveTimer = null;
   
+  // カルテ検索機能の設定
+  function setupKarteSearch() {
+    const searchInput = document.getElementById('karte-search');
+    const clearButton = document.getElementById('clear-search');
+    
+    if (!searchInput || !clearButton) return;
+    
+    // 検索実行
+    searchInput.addEventListener('input', function() {
+      const searchText = this.value.toLowerCase();
+      filterKarteList(searchText);
+    });
+    
+    // 検索クリア
+    clearButton.addEventListener('click', function() {
+      searchInput.value = '';
+      filterKarteList('');
+      searchInput.focus();
+    });
+    
+    // 検索結果のフィルタリング
+    function filterKarteList(searchText) {
+      const rows = document.querySelectorAll('#karte-list-body tr');
+      
+      rows.forEach(row => {
+        if (!searchText) {
+          row.style.display = '';
+          return;
+        }
+        
+        const cells = row.querySelectorAll('td');
+        let found = false;
+        
+        cells.forEach(cell => {
+          if (cell.textContent.toLowerCase().includes(searchText)) {
+            found = true;
+          }
+        });
+        
+        row.style.display = found ? '' : 'none';
+      });
+      
+      // 検索結果がない場合のメッセージ
+      const tbody = document.getElementById('karte-list-body');
+      const noResults = document.getElementById('no-results-message');
+      
+      // 表示されている行があるか確認
+      const hasVisibleRows = Array.from(rows).some(row => row.style.display !== 'none');
+      
+      // 検索結果がない場合のメッセージを表示
+      if (!hasVisibleRows && searchText) {
+        if (!noResults) {
+          const message = document.createElement('tr');
+          message.id = 'no-results-message';
+          message.innerHTML = `<td colspan="9" style="text-align: center; padding: 20px;">検索結果が見つかりません。検索条件「${searchText}」に一致するカルテはありません。</td>`;
+          tbody.appendChild(message);
+        }
+      } else if (noResults) {
+        noResults.remove();
+      }
+    }
+  }
+  
   // 初期化処理
   function initialize() {
     if (isInitialized) return;
@@ -35,6 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       isInitialized = true;
       console.log('初期化完了');
+      
+      // 検索機能の設定
+      setupKarteSearch();
       
       // 初期化後、カルテ一覧を自動的に表示
       setTimeout(() => {
