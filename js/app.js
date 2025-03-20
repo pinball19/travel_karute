@@ -35,6 +35,12 @@ document.addEventListener('DOMContentLoaded', function() {
       
       isInitialized = true;
       console.log('初期化完了');
+      
+      // 初期化後、カルテ一覧を自動的に表示
+      setTimeout(() => {
+        KarteManager.loadKarteList();
+        karteListModal.style.display = 'block';
+      }, 500);
     } catch (error) {
       console.error('初期化中にエラーが発生しました:', error);
       
