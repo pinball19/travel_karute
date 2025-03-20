@@ -207,6 +207,7 @@ const SpreadsheetManager = {
   
   /**
    * 入金合計と支払合計を計算する
+   * インデックスを正確に設定した修正版
    */
   calculateSums: function() {
     if (!this.hot || !this.hot.rootElement) return;
@@ -225,95 +226,180 @@ const SpreadsheetManager = {
         return;
       }
       
-      // 入金情報の合計を計算（8行目から11行目、4列目の値を合計）
+      // テンプレート内のヘッダー行を確認してインデックスを決定
+      // 入金情報のヘッダー行（7行目、インデックス7）
+      let paymentAmountIndex = 4; // デフォルトでは4（'入金額'の位置）
+      if (data[7]) {
+        for (let i = 0; i < data[7].length; i++) {
+          if (data[7][i] === '入金額') {
+            paymentAmountIndex = i;
+            break;
+          }
+        }
+      }
+      
+      // 支払情報のヘッダー行（15行目、インデックス15）
+      let expenseAmountIndex = 5; // デフォルトでは5（'支払金額'の位置）
+      if (data[15]) {
+        for (let i = 0; i < data[15].length; i++) {
+          if (data[15][i] === '支払金額') {
+            expenseAmountIndex = i;
+            break;
+          }
+        }
+      }
+      
+      // 入金情報の合計を計算（8行目から11行目）
       let paymentSum = 0;
       for (let i = 8; i <= 11; i++) {
-        if (data[i] && data[i][4]) {
-          const value = parseFloat(data[i][4]);
+        if (data[i] && data[i][paymentAmountIndex]) {
+          const value = parseFloat(data[i][paymentAmountIndex]);
           if (!isNaN(value)) {
             paymentSum += value;
           }
         }
       }
       
-      // 支払情報の合計を計算（16行目から19行目、5列目の値を合計）
+      // 支払情報の合計を計算（16行目から19行目）
       let expenseSum = 0;
       for (let i = 16; i <= 19; i++) {
-        if (data[i] && data[i][5]) {
-          const value = parseFloat(data[i][5]);
+        if (data[i] && data[i][expenseAmountIndex]) {
+          const value = parseFloat(data[i][expenseAmountIndex]);
           if (!isNaN(value)) {
             expenseSum += value;
           }
         }
       }
       
+      // 入金合計行（12行目）を探す
+      let paymentTotalRow = 12; // デフォルト
+      for (let i = 7; i < data.length; i++) {
+        if (data[i] && data[i][0] === 'A；入金合計') {
+          paymentTotalRow = i;
+          break;
+        }
+      }
+      
+      // 支払合計行（20行目）を探す
+      let expenseTotalRow = 20; // デフォルト
+      for (let i = 15; i < data.length; i++) {
+        if (data[i] && data[i][0] === 'B；支払合計') {
+          expenseTotalRow = i;
+          break;
+        }
+      }
+      
       // 値の変更を一括で行うための配列
       const changes = [];
       
-      // 入金合計を設定（12行目、4列目）
+      // 入金合計を設定（入金額と同じ列に表示）
       if (paymentSum > 0) {
-        changes.push([12, 4, paymentSum]);
+        changes.push([paymentTotalRow, paymentAmountIndex, paymentSum]);
+      } else {
+        changes.push([paymentTotalRow, paymentAmountIndex, '']);
       }
       
-      // 支払合計を設定（20行目、5列目）
+      // 支払合計を設定（支払金額と同じ列に表示）
       if (expenseSum > 0) {
-        changes.push([20, 5, expenseSum]);
+        changes.push([expenseTotalRow, expenseAmountIndex, expenseSum]);
+      } else {
+        changes.push([expenseTotalRow, expenseAmountIndex, '']);
       }
       
-      // 収支情報を更新（24行目）
+      // 収支情報行を探す（24行目のデフォルト）
+      let summaryHeaderRow = 22; // デフォルト：'◆ 収支情報'
+      let summaryRow = 24; // デフォルト：'報告日...'行の下の行
+      
+      for (let i = 0; i < data.length; i++) {
+        if (data[i] && data[i][0] === '◆ 収支情報') {
+          summaryHeaderRow = i;
+          summaryRow = i + 2; // 通常はヘッダー行の2行下
+          break;
+        }
+      }
+      
+      // 収支情報を更新
       if (paymentSum > 0 || expenseSum > 0) {
         // 利益額（収入 - 支出）
         const profit = paymentSum - expenseSum;
         if (profit !== 0) {
-          changes.push([24, 2, profit]);
+          changes.push([summaryRow, 2, profit]);
+        } else {
+          changes.push([summaryRow, 2, '']);
         }
         
         // 利益率（利益額 / 収入 * 100）
         if (paymentSum > 0) {
           const profitRate = (profit / paymentSum * 100).toFixed(1);
-          changes.push([24, 1, profitRate + '%']);
+          changes.push([summaryRow, 1, profitRate + '%']);
+        } else {
+          changes.push([summaryRow, 1, '']);
         }
         
         // 旅行総額と支払総額
         if (paymentSum > 0) {
-          changes.push([24, 4, paymentSum]);
+          changes.push([summaryRow, 4, paymentSum]);
+        } else {
+          changes.push([summaryRow, 4, '']);
         }
         
         if (expenseSum > 0) {
-          changes.push([24, 5, expenseSum]);
+          changes.push([summaryRow, 5, expenseSum]);
+        } else {
+          changes.push([summaryRow, 5, '']);
         }
         
-        // 人数を取得（4行目、5列目）
-        if (data[3] && data[3][5]) {
-          const persons = parseFloat(data[3][5]);
+        // 人数の位置を探す（デフォルトは4行目、5列目）
+        let personCell = null;
+        for (let i = 0; i < 10; i++) { // 先頭10行を検索
+          if (data[i]) {
+            for (let j = 0; j < data[i].length; j++) {
+              if (data[i][j] === '合計\n人数' || data[i][j] === '合計人数' || data[i][j] === '人数') {
+                if (data[i+1] && data[i+1][j]) {
+                  personCell = [i+1, j];
+                  break;
+                }
+              }
+            }
+          }
+          if (personCell) break;
+        }
+        
+        // デフォルトの人数位置
+        if (!personCell && data[3] && data[3][5]) {
+          personCell = [3, 5];
+        }
+        
+        // 人数を使って一人粗利を計算
+        if (personCell && data[personCell[0]] && data[personCell[0]][personCell[1]]) {
+          const persons = parseFloat(data[personCell[0]][personCell[1]]);
           if (!isNaN(persons) && persons > 0) {
             // 一人粗利を計算
             const perPersonProfit = (profit / persons).toFixed(0);
             if (perPersonProfit !== '0') {
-              changes.push([24, 3, perPersonProfit]);
+              changes.push([summaryRow, 3, perPersonProfit]);
+            } else {
+              changes.push([summaryRow, 3, '']);
             }
             
             // 人数を収支情報にもコピー
-            changes.push([24, 6, persons]);
+            changes.push([summaryRow, 6, persons]);
           }
         }
       }
       
-      // 一括で変更を適用（パフォーマンス向上）
-      if (changes.length > 0) {
+      // 一括で変更を適用
+      try {
         // 変更を一括で適用
-        try {
-          // 小さな変更の場合は個別にデータを更新
-          changes.forEach(change => {
-            const [row, col, value] = change;
-            // セルの値が変わる場合のみ更新（無限ループ防止）
-            if (String(data[row][col]) !== String(value)) {
-              this.hot.setDataAtCell(row, col, value, 'internal');
-            }
-          });
-        } catch (error) {
-          console.error('データ更新中にエラーが発生しました:', error);
-        }
+        changes.forEach(change => {
+          const [row, col, value] = change;
+          // セルの値が変わる場合のみ更新
+          if (String(data[row][col]) !== String(value)) {
+            this.hot.setDataAtCell(row, col, value, 'internal');
+          }
+        });
+      } catch (error) {
+        console.error('データ更新中にエラーが発生しました:', error);
       }
     } catch (error) {
       console.error('合計計算中にエラーが発生しました:', error);
@@ -576,6 +662,16 @@ const SpreadsheetManager = {
             console.error('レンダリング中にエラーが発生しました:', error);
           }
         }
+        
+        // スクロールバーの設定を上書き
+        const wtHolders = document.querySelectorAll('.wtHolder');
+        wtHolders.forEach(holder => {
+          holder.style.overflowX = 'visible';
+          holder.style.overflowY = 'visible';
+        });
+        
+        // 合計を計算
+        this.calculateSums();
       }, 100);
     } catch (error) {
       console.error('データロード中にエラーが発生しました:', error);
@@ -641,7 +737,8 @@ const SpreadsheetManager = {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
         
-        // データをHandsontableに読み込む
+        // データをHan
+      // データをHandsontableに読み込む
         this.loadData(jsonData);
         
         if (callback) callback(true);
