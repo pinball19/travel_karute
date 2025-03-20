@@ -17,6 +17,7 @@
       <div class="app-title">カルテシステム - [団体ナビ成約カルテ.xlsx]</div>
       <div class="info">
         <span id="current-karte-id">新規カルテ</span>
+        <!-- 編集者リストはここに動的に追加されます -->
       </div>
     </div>
     
@@ -79,6 +80,7 @@
               <th>宿泊日</th>
               <th>行先</th>
               <th>人数</th>
+              <th>編集者</th>
               <th>操作</th>
             </tr>
           </thead>
@@ -172,6 +174,70 @@
     // エラーハンドリング
     window.addEventListener('error', function(event) {
       console.error('グローバルエラー:', event.message, 'at', event.filename, ':', event.lineno);
+    });
+    
+    // オフライン状態の検出
+    window.addEventListener('offline', function() {
+      document.getElementById('connection-status').textContent = 'オフライン';
+      document.getElementById('connection-status').style.color = 'red';
+      
+      // オフライン通知
+      const notification = document.createElement('div');
+      notification.id = 'offline-notification';
+      notification.style.position = 'fixed';
+      notification.style.bottom = '60px';
+      notification.style.left = '20px';
+      notification.style.backgroundColor = '#f44336';
+      notification.style.color = 'white';
+      notification.style.padding = '10px 20px';
+      notification.style.borderRadius = '5px';
+      notification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+      notification.style.zIndex = '9999';
+      notification.innerHTML = '<i class="fas fa-wifi"></i> インターネット接続がオフラインになりました。リアルタイム同期は停止しています。';
+      
+      document.body.appendChild(notification);
+    });
+    
+    // オンライン状態の検出
+    window.addEventListener('online', function() {
+      document.getElementById('connection-status').textContent = 'オンライン';
+      document.getElementById('connection-status').style.color = '';
+      
+      // オフライン通知を削除
+      const notification = document.getElementById('offline-notification');
+      if (notification) {
+        notification.remove();
+      }
+      
+      // オンライン通知
+      const onlineNotification = document.createElement('div');
+      onlineNotification.id = 'online-notification';
+      onlineNotification.style.position = 'fixed';
+      onlineNotification.style.bottom = '60px';
+      onlineNotification.style.left = '20px';
+      onlineNotification.style.backgroundColor = '#4CAF50';
+      onlineNotification.style.color = 'white';
+      onlineNotification.style.padding = '10px 20px';
+      onlineNotification.style.borderRadius = '5px';
+      onlineNotification.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+      onlineNotification.style.zIndex = '9999';
+      onlineNotification.style.transition = 'opacity 0.5s';
+      onlineNotification.innerHTML = '<i class="fas fa-wifi"></i> インターネット接続が復帰しました。リアルタイム同期を再開します。';
+      
+      document.body.appendChild(onlineNotification);
+      
+      // 5秒後に通知を消す
+      setTimeout(function() {
+        onlineNotification.style.opacity = '0';
+        setTimeout(function() {
+          onlineNotification.remove();
+        }, 500);
+      }, 5000);
+      
+      // 現在開いているカルテがあれば、リアルタイムリスナーを再設定
+      if (KarteManager.currentKarteId) {
+        KarteManager.attachRealtimeListener(KarteManager.currentKarteId);
+      }
     });
   </script>
 </body>
