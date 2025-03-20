@@ -21,7 +21,7 @@
       </div>
     </div>
     
-    <!-- リボン (Excel上部ツールバー) -->
+    <!-- リボン (Excel上部ツールバー) - 印刷と取込ボタンを削除 -->
     <div class="excel-ribbon">
       <button class="ribbon-button" id="save-button">
         <i class="fas fa-save"></i>
@@ -36,18 +36,9 @@
         <i class="fas fa-folder-open"></i>
         開く
       </button>
-      <button class="ribbon-button" id="import-button">
-        <i class="fas fa-file-import"></i>
-        取込
-      </button>
       <button class="ribbon-button" id="export-button">
         <i class="fas fa-file-export"></i>
         出力
-      </button>
-      <div class="ribbon-divider"></div>
-      <button class="ribbon-button" id="print-button">
-        <i class="fas fa-print"></i>
-        印刷
       </button>
     </div>
     
@@ -104,7 +95,7 @@
     <i class="fas fa-spinner fa-spin"></i> 保存中...
   </div>
   
-  <!-- 非表示のファイルインポート用input -->
+  <!-- 非表示のファイルインポート用input （取込機能を削除したが、input要素はコードの互換性のために残しておく） -->
   <input type="file" id="file-import" style="display: none;" accept=".xlsx, .xls, .csv">
   
   <!-- スクリプト -->
