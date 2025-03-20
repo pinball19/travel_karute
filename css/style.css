@@ -369,3 +369,214 @@ body {
     font-size: 10px;
   }
 }
+
+/* スマホ向けカルテ一覧のスタイル改善 */
+@media (max-width: 768px) {
+  /* モーダルをフルスクリーンに近く */
+  .modal-content {
+    margin: 10px auto;
+    padding: 10px;
+    width: 98%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* テーブルをカード形式に変更 */
+  .modal-table, 
+  .modal-table thead, 
+  .modal-table tbody, 
+  .modal-table th, 
+  .modal-table td, 
+  .modal-table tr {
+    display: block;
+  }
+  
+  /* ヘッダーを非表示 */
+  .modal-table thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+  
+  /* 行をカード風に */
+  .modal-table tbody tr {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background: #fff;
+    position: relative;
+    padding-bottom: 40px; /* ボタン用のスペース */
+  }
+  
+  /* セルにラベルを表示 */
+  .modal-table td {
+    position: relative;
+    padding-left: 40%;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    border: none;
+    border-bottom: 1px solid #eee;
+    min-height: 30px;
+  }
+  
+  /* 最後のセルの下線を消す */
+  .modal-table td:last-of-type {
+    border-bottom: none;
+  }
+  
+  /* データの前にカラム名を表示 */
+  .modal-table td:before {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 35%;
+    padding-right: 10px;
+    white-space: nowrap;
+    font-weight: bold;
+    content: attr(data-title);
+  }
+  
+  /* 操作ボタンの位置を固定 */
+  .modal-table td:last-child {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 5px;
+    text-align: center;
+    background: #f9f9f9;
+    border-top: 1px solid #eee;
+    border-radius: 0 0 5px 5px;
+  }
+  
+  /* 操作ボタンを横並びに */
+  .action-btn {
+    display: inline-block;
+    width: auto;
+    margin: 5px 10px;
+    padding: 8px 15px;
+  }
+  
+  /* 編集者の表示を改善 */
+  td[data-title="編集者"] {
+    color: #e53935; /* 赤色で表示 */
+    font-size: 0.9em;
+  }
+}
+
+/* モーダルのタイトルとクローズボタンをスマホ対応 */
+.modal-content h2 {
+  margin-top: 5px;
+  margin-bottom: 15px;
+  padding-right: 20px; /* クローズボタン用のスペース */
+}
+
+/* モーダルのタイトル下に検索フィルターを追加 */
+.modal-filter {
+  margin-bottom: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modal-filter input {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.modal-filter button {
+  padding: 8px 15px;
+  background-color: #4472C4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-filter button:hover {
+  background-color: #365aa7;
+}
+
+/* スムーズなトランジション効果 */
+.modal {
+  transition: opacity 0.3s ease;
+}
+
+.modal-content {
+  transition: transform 0.3s ease;
+  transform: translateY(0);
+}
+
+.modal.fade-in {
+  opacity: 0;
+}
+
+.modal.fade-in .modal-content {
+  transform: translateY(-20px);
+}
+
+/* スマホ表示時のさらなる最適化 */
+@media (max-width: 768px) {
+  .close-modal {
+    top: 10px;
+    right: 10px;
+    font-size: 28px;
+    z-index: 10;
+  }
+  
+  /* モーダルが開くときのアニメーション */
+  @keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .modal-content {
+    animation: slideUp 0.3s ease-out;
+    padding-top: 40px; /* クローズボタン用のスペース */
+  }
+  
+  .modal-content h2 {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 10;
+    margin: 0;
+    padding: 10px 0;
+    background-color: white;
+    width: calc(100% - 60px);
+  }
+  
+  /* カラムの順序変更 (スマホで重要なものを上に) */
+  .modal-table tr td[data-title="カルテNo"] { order: 1; }
+  .modal-table tr td[data-title="団体名"] { order: 2; }
+  .modal-table tr td[data-title="名前"] { order: 3; }
+  .modal-table tr td[data-title="宿泊日"] { order: 4; }
+  .modal-table tr td[data-title="行先"] { order: 5; }
+  .modal-table tr td[data-title="人数"] { order: 6; }
+  .modal-table tr td[data-title="担当者"] { order: 7; }
+  .modal-table tr td[data-title="編集者"] { order: 8; }
+  .modal-table tr td[data-title="操作"] { order: 9; }
+  
+  /* カード形式での余白調整 */
+  .modal-table tbody tr {
+    display: flex;
+    flex-direction: column;
+    padding: 0 0 40px 0;
+  }
+  
+  /* スタイル調整 */
+  .modal-table td[data-title="カルテNo"] {
+    background-color: #f3f7fa;
+    font-weight: bold;
+  }
+  
+  .modal-table td[data-title="団体名"] {
+    font-size: 1.1em;
+  }
+}
