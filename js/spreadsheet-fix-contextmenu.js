@@ -17,6 +17,13 @@ const SpreadsheetManager = {
       return;
     }
     
+    // コンテナのサイズを確認
+    if (container.offsetHeight === 0) {
+      console.warn('hot-containerの高さがゼロです。500ms後に再試行します');
+      setTimeout(() => this.initialize(), 500);
+      return;
+    }
+    
     // 既存のインスタンスがあれば破棄
     if (this.hot) {
       this.hot.destroy();
@@ -175,7 +182,18 @@ const SpreadsheetManager = {
     if (!this.hot) return;
     
     try {
+      // DOM要素の確認
+      if (!this.hot.rootElement || !this.hot.rootElement.offsetHeight) {
+        console.warn('Handsontableの要素が正しく初期化されていません。計算をスキップします');
+        return;
+      }
+      
+      // データを取得
       const data = this.hot.getData();
+      if (!data || !Array.isArray(data)) {
+        console.warn('データが正しく取得できませんでした');
+        return;
+      }
       
       // 入金情報の合計を計算（8行目から11行目、4列目の値を合計）
       let paymentSum = 0;
@@ -199,27 +217,38 @@ const SpreadsheetManager = {
         }
       }
       
+      // 安全にセルに値を設定する関数
+      const safeSetDataAtCell = (row, col, value) => {
+        try {
+          if (this.hot && this.hot.setDataAtCell && typeof row === 'number' && typeof col === 'number') {
+            this.hot.setDataAtCell(row, col, value);
+          }
+        } catch (error) {
+          console.warn(`セル(${row},${col})への設定中にエラーが発生しました:`, error);
+        }
+      };
+      
       // 入金合計を設定（12行目、4列目）
-      this.hot.setDataAtCell(12, 4, paymentSum > 0 ? paymentSum : '');
+      safeSetDataAtCell(12, 4, paymentSum > 0 ? paymentSum : '');
       
       // 支払合計を設定（20行目、5列目）
-      this.hot.setDataAtCell(20, 5, expenseSum > 0 ? expenseSum : '');
+      safeSetDataAtCell(20, 5, expenseSum > 0 ? expenseSum : '');
       
       // 収支情報を更新（24行目）
       if (paymentSum > 0 || expenseSum > 0) {
         // 利益額（収入 - 支出）
         const profit = paymentSum - expenseSum;
-        this.hot.setDataAtCell(24, 2, profit !== 0 ? profit : '');
+        safeSetDataAtCell(24, 2, profit !== 0 ? profit : '');
         
         // 利益率（利益額 / 収入 * 100）
         if (paymentSum > 0) {
           const profitRate = (profit / paymentSum * 100).toFixed(1);
-          this.hot.setDataAtCell(24, 1, profitRate + '%');
+          safeSetDataAtCell(24, 1, profitRate + '%');
         }
         
         // 旅行総額と支払総額
-        this.hot.setDataAtCell(24, 4, paymentSum > 0 ? paymentSum : '');
-        this.hot.setDataAtCell(24, 5, expenseSum > 0 ? expenseSum : '');
+        safeSetDataAtCell(24, 4, paymentSum > 0 ? paymentSum : '');
+        safeSetDataAtCell(24, 5, expenseSum > 0 ? expenseSum : '');
         
         // 人数を取得（4行目、5列目）
         if (data[3] && data[3][5]) {
@@ -227,10 +256,10 @@ const SpreadsheetManager = {
           if (!isNaN(persons) && persons > 0) {
             // 一人粗利を計算
             const perPersonProfit = (profit / persons).toFixed(0);
-            this.hot.setDataAtCell(24, 3, perPersonProfit !== '0' ? perPersonProfit : '');
+            safeSetDataAtCell(24, 3, perPersonProfit !== '0' ? perPersonProfit : '');
             
             // 人数を収支情報にもコピー
-            this.hot.setDataAtCell(24, 6, persons);
+            safeSetDataAtCell(24, 6, persons);
           }
         }
       }
@@ -243,29 +272,33 @@ const SpreadsheetManager = {
    * モバイルデバイス向けの調整
    */
   adjustForMobile: function() {
-    if (window.innerWidth <= 768) { // スマホサイズの場合
-      // ヘッダーの高さを調整
-      const colHeaders = document.querySelectorAll('.ht_clone_top .htCore th');
-      colHeaders.forEach(th => {
-        th.style.height = '30px';
-        th.style.padding = '2px';
-        th.style.fontSize = '12px';
-      });
-      
-      // 行ヘッダーの幅を調整
-      const rowHeaders = document.querySelectorAll('.ht_clone_left .htCore th');
-      rowHeaders.forEach(th => {
-        th.style.width = '30px';
-        th.style.padding = '2px';
-        th.style.fontSize = '12px';
-      });
-      
-      // セルのサイズを調整
-      const cells = document.querySelectorAll('.htCore td');
-      cells.forEach(td => {
-        td.style.padding = '4px';
-        td.style.fontSize = '12px';
-      });
+    try {
+      if (window.innerWidth <= 768) { // スマホサイズの場合
+        // ヘッダーの高さを調整
+        const colHeaders = document.querySelectorAll('.ht_clone_top .htCore th');
+        colHeaders.forEach(th => {
+          th.style.height = '30px';
+          th.style.padding = '2px';
+          th.style.fontSize = '12px';
+        });
+        
+        // 行ヘッダーの幅を調整
+        const rowHeaders = document.querySelectorAll('.ht_clone_left .htCore th');
+        rowHeaders.forEach(th => {
+          th.style.width = '30px';
+          th.style.padding = '2px';
+          th.style.fontSize = '12px';
+        });
+        
+        // セルのサイズを調整
+        const cells = document.querySelectorAll('.htCore td');
+        cells.forEach(td => {
+          td.style.padding = '4px';
+          td.style.fontSize = '12px';
+        });
+      }
+    } catch (error) {
+      console.error('モバイル調整中にエラーが発生しました:', error);
     }
   },
   
@@ -278,6 +311,10 @@ const SpreadsheetManager = {
     try {
       // データを取得
       const data = this.hot.getData();
+      if (!data || !Array.isArray(data)) {
+        console.warn('データが正しく取得できませんでした');
+        return;
+      }
       
       // セクションヘッダーの位置を探し、スタイル設定を更新
       let updatedSectionHeaders = [];
@@ -297,7 +334,7 @@ const SpreadsheetManager = {
       // 入金情報セクション
       let paymentSectionIndex = -1;
       for (let i = basicSectionIndex + 3; i < data.length; i++) {
-        if (data[i][0] === '◆ 入金情報') {
+        if (data[i] && data[i][0] === '◆ 入金情報') {
           paymentSectionIndex = i;
           break;
         }
@@ -310,7 +347,7 @@ const SpreadsheetManager = {
         
         // 入金合計行を探す
         for (let i = paymentSectionIndex + 2; i < data.length; i++) {
-          if (data[i][0] === 'A；入金合計') {
+          if (data[i] && data[i][0] === 'A；入金合計') {
             updatedTotalRows.push(i);
             break;
           }
@@ -320,7 +357,7 @@ const SpreadsheetManager = {
       // 支払情報セクション
       let expenseSectionIndex = -1;
       for (let i = (paymentSectionIndex > 0 ? paymentSectionIndex + 2 : basicSectionIndex + 6); i < data.length; i++) {
-        if (data[i][0] === '◆ 支払情報') {
+        if (data[i] && data[i][0] === '◆ 支払情報') {
           expenseSectionIndex = i;
           break;
         }
@@ -333,7 +370,7 @@ const SpreadsheetManager = {
         
         // 支払合計行を探す
         for (let i = expenseSectionIndex + 2; i < data.length; i++) {
-          if (data[i][0] === 'B；支払合計') {
+          if (data[i] && data[i][0] === 'B；支払合計') {
             updatedTotalRows.push(i);
             break;
           }
@@ -343,7 +380,7 @@ const SpreadsheetManager = {
       // 収支情報セクション
       let profitSectionIndex = -1;
       for (let i = (expenseSectionIndex > 0 ? expenseSectionIndex + 2 : basicSectionIndex + 12); i < data.length; i++) {
-        if (data[i][0] === '◆ 収支情報') {
+        if (data[i] && data[i][0] === '◆ 収支情報') {
           profitSectionIndex = i;
           break;
         }
@@ -355,7 +392,7 @@ const SpreadsheetManager = {
         
         // 上席チェック行を探す
         for (let i = profitSectionIndex + 2; i < data.length; i++) {
-          if (data[i][0] === '上席チェック') {
+          if (data[i] && data[i][0] === '上席チェック') {
             updatedHeaderRows.push(i);
             break;
           }
@@ -416,12 +453,18 @@ const SpreadsheetManager = {
       SECTION_STYLES.spacerRows = updatedSpacerRows;
       
       // マージセルと設定を更新
-      this.hot.updateSettings({
-        mergeCells: updatedMerges
-      });
-      
-      // 再レンダリング
-      this.hot.render();
+      try {
+        if (this.hot && this.hot.updateSettings) {
+          this.hot.updateSettings({
+            mergeCells: updatedMerges
+          });
+          
+          // 再レンダリング
+          this.hot.render();
+        }
+      } catch (updateError) {
+        console.error('設定更新中にエラーが発生しました:', updateError);
+      }
       
       // 合計を再計算
       this.calculateSums();
@@ -485,6 +528,12 @@ const SpreadsheetManager = {
     }
     
     try {
+      // データの検証
+      if (!data || !Array.isArray(data)) {
+        console.error('無効なデータが提供されました');
+        data = UNIFIED_TEMPLATE; // デフォルトテンプレートを使用
+      }
+      
       // データが30行未満の場合、30行になるよう空行を追加
       if (data.length < 30) {
         const emptyRows = Array(30 - data.length).fill().map(() => Array(8).fill(''));
@@ -502,7 +551,9 @@ const SpreadsheetManager = {
         }
         
         // 再レンダリング
-        this.hot.render();
+        if (this.hot && this.hot.render) {
+          this.hot.render();
+        }
         
         // スクロールバーの設定を上書き
         const wtHolders = document.querySelectorAll('.wtHolder');
@@ -528,7 +579,12 @@ const SpreadsheetManager = {
       console.warn('Handsontableインスタンスがありません');
       return [];
     }
-    return this.hot.getData();
+    try {
+      return this.hot.getData();
+    } catch (error) {
+      console.error('データ取得中にエラーが発生しました:', error);
+      return [];
+    }
   },
   
   /**
@@ -542,7 +598,11 @@ const SpreadsheetManager = {
       console.warn('Handsontableインスタンスがありません');
       return;
     }
-    this.hot.setDataAtCell(row, col, value);
+    try {
+      this.hot.setDataAtCell(row, col, value);
+    } catch (error) {
+      console.error(`セル(${row},${col})への設定中にエラーが発生しました:`, error);
+    }
   },
   
   /**
