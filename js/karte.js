@@ -711,40 +711,48 @@ const KarteManager = {
           // カルテNo
           const cellKarteNo = document.createElement('td');
           cellKarteNo.textContent = karteInfo.karteNo || doc.id;
+          cellKarteNo.setAttribute('data-title', 'カルテNo');
           row.appendChild(cellKarteNo);
           
           // 担当者
           const cellTantosha = document.createElement('td');
           cellTantosha.textContent = karteInfo.tantosha || '-';
+          cellTantosha.setAttribute('data-title', '担当者');
           row.appendChild(cellTantosha);
           
           // 名前
           const cellName = document.createElement('td');
           cellName.textContent = karteInfo.name || '-';
+          cellName.setAttribute('data-title', '名前');
           row.appendChild(cellName);
           
           // 団体名
           const cellDantai = document.createElement('td');
           cellDantai.textContent = karteInfo.dantaiName || '-';
+          cellDantai.setAttribute('data-title', '団体名');
           row.appendChild(cellDantai);
           
           // 宿泊日
           const cellStayDate = document.createElement('td');
           cellStayDate.textContent = karteInfo.stayDate || '-';
+          cellStayDate.setAttribute('data-title', '宿泊日');
           row.appendChild(cellStayDate);
           
           // 行先
           const cellDestination = document.createElement('td');
           cellDestination.textContent = karteInfo.destination || '-';
+          cellDestination.setAttribute('data-title', '行先');
           row.appendChild(cellDestination);
           
           // 人数
           const cellPersonCount = document.createElement('td');
           cellPersonCount.textContent = karteInfo.personCount || '-';
+          cellPersonCount.setAttribute('data-title', '人数');
           row.appendChild(cellPersonCount);
           
           // 編集者
           const cellEditors = document.createElement('td');
+          cellEditors.setAttribute('data-title', '編集者');
           if (data.currentEditors && Object.keys(data.currentEditors).length > 0) {
             const editorNames = Object.values(data.currentEditors).map(editor => editor.name);
             cellEditors.textContent = editorNames.join(', ');
@@ -756,6 +764,7 @@ const KarteManager = {
           
           // 操作ボタン
           const cellActions = document.createElement('td');
+          cellActions.setAttribute('data-title', '操作');
           
           // 編集ボタン
           const editBtn = document.createElement('button');
@@ -767,7 +776,7 @@ const KarteManager = {
           };
           cellActions.appendChild(editBtn);
           
-          // 削除ボタン
+// 削除ボタン
           const deleteBtn = document.createElement('button');
           deleteBtn.className = 'action-btn delete-btn';
           deleteBtn.textContent = '削除';
@@ -779,6 +788,7 @@ const KarteManager = {
           cellActions.appendChild(deleteBtn);
           
           row.appendChild(cellActions);
+          
           // 行を一覧に追加
           karteListBody.appendChild(row);
         });
