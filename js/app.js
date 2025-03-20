@@ -8,9 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const saveButton = document.getElementById('save-button');
   const newButton = document.getElementById('new-button');
   const openButton = document.getElementById('open-button');
-  const importButton = document.getElementById('import-button');
   const exportButton = document.getElementById('export-button');
-  const printButton = document.getElementById('print-button');
   const fileImport = document.getElementById('file-import');
   const closeModal = document.querySelector('.close-modal');
   const karteListModal = document.getElementById('karte-list-modal');
@@ -191,17 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // 取込ボタンのイベント
-  importButton.addEventListener('click', () => {
-    try {
-      console.log('ファイルインポートダイアログを表示します');
-      fileImport.click();
-    } catch (error) {
-      console.error('インポート処理の初期化中にエラーが発生しました:', error);
-      alert(`インポート処理の初期化中にエラーが発生しました: ${error.message}`);
-    }
-  });
-  
   // 出力ボタンのイベント
   exportButton.addEventListener('click', () => {
     try {
@@ -244,18 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // 印刷ボタンのイベント
-  printButton.addEventListener('click', () => {
-    try {
-      console.log('印刷プレビューを表示します');
-      window.print();
-    } catch (error) {
-      console.error('印刷処理中にエラーが発生しました:', error);
-      alert(`印刷処理中にエラーが発生しました: ${error.message}`);
-    }
-  });
-  
-  // ファイルインポート処理
+  // ファイルインポート処理は残しておく（将来の拡張性のため）
   fileImport.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (!file) return;
