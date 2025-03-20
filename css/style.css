@@ -73,12 +73,14 @@ body {
   position: relative;
   overflow: auto; /* スクロールバーを1つだけに */
   -webkit-overflow-scrolling: touch; /* モバイルデバイスでのスムーズなスクロール */
+  min-height: 400px; /* 最小の高さを設定して要素の消失を防止 */
 }
 
 .hot-container {
   width: 100%;
   height: 100%;
   overflow: visible; /* スクロールバーを表示しない */
+  min-height: 400px; /* 最小の高さを設定して要素の消失を防止 */
 }
 
 /* ステータスバー */
@@ -270,6 +272,25 @@ body {
 
 .handsontable .wtHolder {
   overflow: auto !important;
+}
+
+/* 高コントラストモード対応（-ms-high-contrast 非推奨対応） */
+@media (forced-colors: active) {
+  .excel-header {
+    border: 1px solid ButtonText;
+  }
+  
+  .ribbon-button {
+    border: 1px solid transparent;
+  }
+  
+  .ribbon-button:hover, .ribbon-button:focus {
+    border: 1px solid ButtonText;
+  }
+  
+  .action-btn {
+    border: 1px solid ButtonText;
+  }
 }
 
 /* 印刷時のスタイル */
