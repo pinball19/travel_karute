@@ -117,3 +117,137 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('カルテ一覧の読み込み中にエラーが発生しました:', error);
       alert(`カルテ一覧の読み込み中にエラーが発生しました: ${error.message}`);
     }
+  });
+  
+  // 取込ボタンのイベント
+  importButton.addEventListener('click', () => {
+    try {
+      console.log('ファイルインポートダイアログを表示します');
+      fileImport.click();
+    } catch (error) {
+      console.error('インポート処理の初期化中にエラーが発生しました:', error);
+      alert(`インポート処理の初期化中にエラーが発生しました: ${error.message}`);
+    }
+  });
+  
+  // 出力ボタンのイベント
+  exportButton.addEventListener('click', () => {
+    try {
+      console.log('カルテをエクスポートします');
+      
+      // カルテNoまたは現在の日時をファイル名に使用
+      let filename = 'カルテ';
+      
+      // カルテNoが設定されている場合はそれを使用
+      if (KarteManager.currentKarteId) {
+        const karteNo = document.getElementById('current-karte-id').textContent;
+        if (karteNo && karteNo !== '新規カルテ') {
+          filename = karteNo.replace('カルテNo: ', '');
+        }
+      }
+      
+      // 現在の日時を追加
+      const now = new Date();
+      const dateStr = now.getFullYear() + 
+                      ('0' + (now.getMonth() + 1)).slice(-2) + 
+                      ('0' + now.getDate()).slice(-2) + '_' +
+                      ('0' + now.getHours()).slice(-2) + 
+                      ('0' + now.getMinutes()).slice(-2);
+      
+      // ファイル名を生成
+      filename = `${filename}_${dateStr}.xlsx`;
+      
+      // エクスポート実行
+      const result = SpreadsheetManager.exportToExcel(filename);
+      
+      if (result) {
+        console.log('エクスポートが完了しました');
+      } else {
+        console.error('エクスポート中にエラーが発生しました');
+        alert('エクスポート中にエラーが発生しました');
+      }
+    } catch (error) {
+      console.error('エクスポート中にエラーが発生しました:', error);
+      alert(`エクスポート中にエラーが発生しました: ${error.message}`);
+    }
+  });
+  
+  // 印刷ボタンのイベント
+  printButton.addEventListener('click', () => {
+    try {
+      console.log('印刷プレビューを表示します');
+      window.print();
+    } catch (error) {
+      console.error('印刷処理中にエラーが発生しました:', error);
+      alert(`印刷処理中にエラーが発生しました: ${error.message}`);
+    }
+  });
+  
+  // ファイルインポート処理
+  fileImport.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    console.log(`ファイル "${file.name}" をインポートします`);
+    
+    SpreadsheetManager.importFromExcel(file, (success, errorMessage) => {
+      if (success) {
+        console.log('インポートが完了しました');
+        
+        // インポート後は新規カルテ状態に
+        KarteManager.currentKarteId = null;
+        document.getElementById('current-karte-id').textContent = '新規カルテ（インポート済み）';
+        document.getElementById('last-saved').textContent = '保存されていません';
+      } else {
+        console.error('インポート中にエラーが発生しました:', errorMessage);
+        alert(`インポート中にエラーが発生しました: ${errorMessage}`);
+      }
+      
+      // インポート後にファイル選択をリセット
+      fileImport.value = '';
+    });
+  });
+  
+  // モーダルを閉じるボタンのイベント
+  closeModal.addEventListener('click', () => {
+    karteListModal.style.display = 'none';
+  });
+  
+  // モーダル外をクリックした時にも閉じる
+  window.addEventListener('click', (event) => {
+    if (event.target === karteListModal) {
+      karteListModal.style.display = 'none';
+    }
+  });
+  
+  // ESCキーでモーダルを閉じる
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && karteListModal.style.display === 'block') {
+      karteListModal.style.display = 'none';
+    }
+  });
+  
+  // オフライン状態の検出
+  window.addEventListener('offline', () => {
+    document.getElementById('connection-status').textContent = 'オフライン';
+    document.getElementById('connection-status').style.color = 'red';
+    console.warn('ネットワーク接続がオフラインになりました');
+  });
+  
+  // オンライン状態の検出
+  window.addEventListener('online', () => {
+    document.getElementById('connection-status').textContent = 'オンライン';
+    document.getElementById('connection-status').style.color = '';
+    console.log('ネットワーク接続が復旧しました');
+  });
+  
+  // アプリケーション終了前の保存確認
+  window.addEventListener('beforeunload', (event) => {
+    // 変更があり、最後の変更から5秒以内の場合
+    if (lastChangeTime > 0 && (Date.now() - lastChangeTime) < 5000) {
+      const message = '変更が保存されていない可能性があります。ページを離れますか？';
+      event.returnValue = message;
+      return message;
+    }
+  });
+});
