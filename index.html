@@ -112,58 +112,53 @@
   <script src="js/app.js"></script>
   
   <script>
-    // Handsontableが確実に初期化されるよう、DOMロード後に遅延させて初期化
+    // コンテナの初期設定とスクロール制御
     document.addEventListener('DOMContentLoaded', function() {
-      // DOMが完全に読み込まれてから少し遅延させて初期化
+      // 少し遅延させて実行
       setTimeout(function() {
         // コンテナ要素が適切なサイズを持っているか確認
-        const container = document.getElementById('hot-container');
-        if (container) {
+        const hotContainer = document.getElementById('hot-container');
+        const spreadsheetContainer = document.querySelector('.spreadsheet-container');
+        
+        if (hotContainer && spreadsheetContainer) {
           // 明示的にコンテナのサイズを設定
-          const spreadsheetContainer = document.querySelector('.spreadsheet-container');
-          const availableHeight = window.innerHeight - 
-            document.querySelector('.excel-header').offsetHeight - 
-            document.querySelector('.excel-ribbon').offsetHeight -
-            document.querySelector('.status-bar').offsetHeight;
+          const headerHeight = document.querySelector('.excel-header')?.offsetHeight || 0;
+          const ribbonHeight = document.querySelector('.excel-ribbon')?.offsetHeight || 0;
+          const statusBarHeight = document.querySelector('.status-bar')?.offsetHeight || 0;
+          const availableHeight = window.innerHeight - headerHeight - ribbonHeight - statusBarHeight;
           
-          if (spreadsheetContainer) {
-            spreadsheetContainer.style.height = Math.max(400, availableHeight) + 'px';
-          }
-          container.style.height = '100%';
-          container.style.minHeight = '400px';
-        }
-        
-        // スプレッドシートコンテナのスクロールイベントを監視
-        const container = document.querySelector('.spreadsheet-container');
-        
-        if (container) {
-          container.addEventListener('wheel', function(e) {
+          spreadsheetContainer.style.height = Math.max(400, availableHeight) + 'px';
+          hotContainer.style.height = '100%';
+          hotContainer.style.minHeight = '400px';
+          
+          // ホイールイベントの設定
+          spreadsheetContainer.addEventListener('wheel', function(e) {
             // ホイールイベントが発生した時、親要素にスクロールを伝播
             const delta = e.deltaY || e.detail || e.wheelDelta;
             
             // 垂直スクロールの場合
             if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-              container.scrollTop += delta;
+              spreadsheetContainer.scrollTop += delta;
             } else {
               // 水平スクロールの場合
-              container.scrollLeft += e.deltaX;
+              spreadsheetContainer.scrollLeft += e.deltaX;
             }
           });
+          
+          // スマホのタッチスクロールを改善
+          // Handontableの初期化後に実行
+          setTimeout(function() {
+            const htHolder = document.querySelector('.handsontable .wtHolder');
+            if (htHolder) {
+              // Handsontableのスクロールイベントを親要素に伝播
+              htHolder.addEventListener('scroll', function() {
+                // スクロール位置を同期
+                spreadsheetContainer.scrollTop = htHolder.scrollTop;
+                spreadsheetContainer.scrollLeft = htHolder.scrollLeft;
+              });
+            }
+          }, 2000);
         }
-        
-        // スマホのタッチスクロールを改善
-        // Handontableの初期化後に実行
-        setTimeout(function() {
-          const htHolder = document.querySelector('.handsontable .wtHolder');
-          if (htHolder) {
-            // Handsontableのスクロールイベントを親要素に伝播
-            htHolder.addEventListener('scroll', function() {
-              // スクロール位置を同期
-              container.scrollTop = htHolder.scrollTop;
-              container.scrollLeft = htHolder.scrollLeft;
-            });
-          }
-        }, 2000);
       }, 1000); // 1秒遅延
     });
     
