@@ -225,27 +225,36 @@ const SpreadsheetManager = {
         return;
       }
       
+      console.log('合計計算を実行します');
+      
       // 入金情報の合計を計算（E9、E10の値を合計 - カラムインデックスは0始まりなので4列目）
       let paymentSum = 0;
-      for (let i = 8; i <= 11; i++) {
-        if (data[i] && data[i][4]) {
-          const value = parseFloat(data[i][4]);
+      for (let i = 8; i <= 9; i++) {  // インデックス8-9は表示上の9-10行目
+        if (data[i] && data[i][4] !== null && data[i][4] !== undefined && data[i][4] !== '') {
+          const valueStr = String(data[i][4]).replace(/,/g, ''); // カンマを除去
+          const value = parseFloat(valueStr);
           if (!isNaN(value)) {
             paymentSum += value;
+            console.log(`入金行 ${i+1}：${value}`);
           }
         }
       }
       
       // 支払情報の合計を計算（F17、F18、F19、F20の値を合計 - カラムインデックスは0始まりなので5列目）
       let expenseSum = 0;
-      for (let i = 16; i <= 20; i++) {
-        if (data[i] && data[i][5]) {
-          const value = parseFloat(data[i][5]);
+      for (let i = 16; i <= 19; i++) {  // インデックス16-19は表示上の17-20行目
+        if (data[i] && data[i][5] !== null && data[i][5] !== undefined && data[i][5] !== '') {
+          const valueStr = String(data[i][5]).replace(/,/g, ''); // カンマを除去
+          const value = parseFloat(valueStr);
           if (!isNaN(value)) {
             expenseSum += value;
+            console.log(`支払行 ${i+1}：${value}`);
           }
         }
       }
+      
+      console.log('計算結果 - 入金合計:', paymentSum);
+      console.log('計算結果 - 支払合計:', expenseSum);
       
       // 値の変更を一括で行うための配列
       const changes = [];
@@ -286,6 +295,8 @@ const SpreadsheetManager = {
         }
       }
       
+      console.log('適用する変更:', changes);
+      
       // 一括で変更を適用（パフォーマンス向上）
       if (changes.length > 0) {
         try {
@@ -294,12 +305,14 @@ const SpreadsheetManager = {
             const [row, col, value] = change;
             // セルの値が変わる場合のみ更新（無限ループ防止）
             if (String(data[row][col]) !== String(value)) {
+              console.log(`セル(${row+1},${col+1})を更新: ${data[row][col]} → ${value}`);
               this.hot.setDataAtCell(row, col, value, 'internal');
             }
           });
           
           // 変更を適用した後にレンダリング
           this.hot.render();
+          console.log('合計計算とレンダリングが完了しました');
           
         } catch (error) {
           console.error('データ更新中にエラーが発生しました:', error);
