@@ -225,7 +225,7 @@ const SpreadsheetManager = {
         return;
       }
       
-      // 入金情報の合計を計算（8行目から11行目、4列目の値を合計）
+      // 入金情報の合計を計算（E9、E10の値を合計 - カラムインデックスは0始まりなので4列目）
       let paymentSum = 0;
       for (let i = 8; i <= 11; i++) {
         if (data[i] && data[i][4]) {
@@ -236,9 +236,9 @@ const SpreadsheetManager = {
         }
       }
       
-      // 支払情報の合計を計算（16行目から19行目、5列目の値を合計）
+      // 支払情報の合計を計算（F17、F18、F19、F20の値を合計 - カラムインデックスは0始まりなので5列目）
       let expenseSum = 0;
-      for (let i = 16; i <= 19; i++) {
+      for (let i = 16; i <= 20; i++) {
         if (data[i] && data[i][5]) {
           const value = parseFloat(data[i][5]);
           if (!isNaN(value)) {
@@ -250,58 +250,44 @@ const SpreadsheetManager = {
       // 値の変更を一括で行うための配列
       const changes = [];
       
-      // 入金合計を設定（12行目、4列目）
-      if (paymentSum > 0) {
-        changes.push([12, 4, paymentSum]);
-      }
+      // 入金合計を設定（13行目、E列 - 実際のインデックスは12, 4）
+      changes.push([12, 4, paymentSum]);
       
-      // 支払合計を設定（20行目、5列目）
-      if (expenseSum > 0) {
-        changes.push([20, 5, expenseSum]);
-      }
+      // 支払合計を設定（21行目、F列 - 実際のインデックスは20, 5）
+      changes.push([20, 5, expenseSum]);
       
       // 収支情報を更新（24行目）
-      if (paymentSum > 0 || expenseSum > 0) {
-        // 利益額（収入 - 支出）
-        const profit = paymentSum - expenseSum;
-        if (profit !== 0) {
-          changes.push([24, 2, profit]);
-        }
-        
-        // 利益率（利益額 / 収入 * 100）
-        if (paymentSum > 0) {
-          const profitRate = (profit / paymentSum * 100).toFixed(1);
-          changes.push([24, 1, profitRate + '%']);
-        }
-        
-        // 旅行総額と支払総額
-        if (paymentSum > 0) {
-          changes.push([24, 4, paymentSum]);
-        }
-        
-        if (expenseSum > 0) {
-          changes.push([24, 5, expenseSum]);
-        }
-        
-        // 人数を取得（4行目、5列目）
-        if (data[3] && data[3][5]) {
-          const persons = parseFloat(data[3][5]);
-          if (!isNaN(persons) && persons > 0) {
-            // 一人粗利を計算
-            const perPersonProfit = (profit / persons).toFixed(0);
-            if (perPersonProfit !== '0') {
-              changes.push([24, 3, perPersonProfit]);
-            }
-            
-            // 人数を収支情報にもコピー
-            changes.push([24, 6, persons]);
-          }
+      // 利益額（収入 - 支出）
+      const profit = paymentSum - expenseSum;
+      changes.push([24, 2, profit]);
+      
+      // 利益率（利益額 / 収入 * 100）
+      if (paymentSum > 0) {
+        const profitRate = (profit / paymentSum * 100).toFixed(1);
+        changes.push([24, 1, profitRate + '%']);
+      } else {
+        changes.push([24, 1, '0%']);
+      }
+      
+      // 旅行総額と支払総額
+      changes.push([24, 4, paymentSum]);
+      changes.push([24, 5, expenseSum]);
+      
+      // 人数を取得（4行目、F列 - 実際のインデックスは3, 5）
+      if (data[3] && data[3][5]) {
+        const persons = parseFloat(data[3][5]);
+        if (!isNaN(persons) && persons > 0) {
+          // 一人粗利を計算
+          const perPersonProfit = (profit / persons).toFixed(0);
+          changes.push([24, 3, perPersonProfit]);
+          
+          // 人数を収支情報にもコピー
+          changes.push([24, 6, persons]);
         }
       }
       
       // 一括で変更を適用（パフォーマンス向上）
       if (changes.length > 0) {
-        // 変更を一括で適用
         try {
           // 小さな変更の場合は個別にデータを更新
           changes.forEach(change => {
@@ -311,6 +297,10 @@ const SpreadsheetManager = {
               this.hot.setDataAtCell(row, col, value, 'internal');
             }
           });
+          
+          // 変更を適用した後にレンダリング
+          this.hot.render();
+          
         } catch (error) {
           console.error('データ更新中にエラーが発生しました:', error);
         }
